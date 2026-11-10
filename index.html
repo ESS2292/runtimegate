@@ -202,8 +202,8 @@ jobs:
       <section id="faq" class="faq">
         <h2>FAQ</h2>
         <details>
-          <summary>Is this the same as EnvGate?</summary>
-          <p>No. EnvGate checks environment files for missing keys, placeholders, and a narrow set of secret shapes. RuntimeGate checks whether runtime version pins agree. They share an audience (CI and DevOps) and the same “fail the job, not the deploy” idea.</p>
+          <summary>Is this the same as EnvGate or LockGate?</summary>
+          <p>No. EnvGate checks environment files for missing keys, placeholders, and a narrow set of secret shapes. RuntimeGate checks whether runtime version pins agree. LockGate checks whether the dependency install is frozen and repeatable. The free <a href="https://github.com/ESS2292/lockgate-action">LockGate Lite Action</a> fails the job when mixed lockfiles are committed or CI runs an unfrozen install. They share an audience (CI and DevOps) and the same “fail the job, not the deploy” idea.</p>
         </details>
         <details>
           <summary>Why $19 if the source is MIT?</summary>
