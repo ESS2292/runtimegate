@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Add a Sitemap line once a public absolute URL exists.
+

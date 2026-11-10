@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RuntimeGate — fail CI when runtime version pins disagree</title>
+  <meta name="description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included." />
+  <meta name="author" content="Emilio Straubel" />
+  <meta name="robots" content="noindex" />
+  <meta property="og:title" content="RuntimeGate — fail CI when runtime version pins disagree" />
+  <meta property="og:description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="RuntimeGate" />
+  <meta property="og:image" content="og-image.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="RuntimeGate — fail CI when runtime version pins disagree" />
+  <meta name="twitter:description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included." />
+  <meta name="twitter:image" content="og-image.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="og-image.svg" type="image/svg+xml" />
+  <!-- Canonical and absolute og:url/og:image will be set when a public URL exists. Do not invent one. -->
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Primary">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">rg</span>
+        RuntimeGate
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html#checks">What it checks</a></li>
+        <li><a href="index.html#ci">CI</a></li>
+        <li><a href="index.html#limits">Limits</a></li>
+        <li><a href="index.html#pricing">Pricing</a></li>
+        <li><a href="guides/index.html">Guides</a></li>
+        <li><a href="index.html#faq">FAQ</a></li>
+      </ul>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Developer CLI · MIT source included · draft site, not published</div>
+        <h1>RuntimeGate — fail CI when runtime pins disagree, not the deploy</h1>
+        <p class="lead">
+          A small Node.js CLI that checks whether your Dockerfile, CI, and version files agree on Node.js, Python, or Go — and can optionally fail when a pin is past official end of support.
+        </p>
+        <div class="meta">
+          <span class="chip"><em>v0.1.0</em></span>
+          <span class="chip">Node <em>18+</em></span>
+          <span class="chip">Runtime deps <em>0</em></span>
+          <span class="chip">License <em>MIT</em></span>
+          <span class="chip">One-time <em>$19 USD</em></span>
+        </div>
+        <p class="note">
+          RuntimeGate is a local CLI you run against a checkout. It is a consistency gate, not a guarantee that production actually runs the pinned version.
+          The 0.1.0 source + CLI bundle is MIT licensed. Checkout is not live. This site is a local draft and is not indexed.
+        </p>
+      </div>
+
+      <aside class="price-card" id="pricing" aria-label="Pricing">
+        <div class="amt">$19<span>USD · one-time</span></div>
+        <p>
+          Packaged CLI + full MIT source, examples, tests, and a sample GitHub Actions workflow.
+          You are buying a packaged release and seller-provided packaging/docs convenience — not exclusive proprietary rights to the code.
+        </p>
+        <button type="button" id="buy-btn" class="buy-btn" disabled data-checkout-url="">Checkout coming soon</button>
+        <p class="buy-note">Checkout is not live yet. Payments will be processed by Lemon Squeezy when the store opens. Do not publish this site until that URL is real.</p>
+        <div class="art" aria-hidden="true">
+          <svg class="art-svg" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stylized RuntimeGate graphic">
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#38bdf8" stop-opacity=".9"/>
+                <stop offset="100%" stop-color="#818cf8" stop-opacity=".7"/>
+              </linearGradient>
+              <linearGradient id="g2" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#0f172a"/>
+              </linearGradient>
+            </defs>
+            <rect width="640" height="360" fill="url(#g2)"/>
+            <rect x="70" y="90" width="150" height="44" rx="10" fill="#122038" stroke="#2a3a55"/>
+            <text x="145" y="118" text-anchor="middle" fill="#9aadc9" font-family="ui-monospace,monospace" font-size="14">.nvmrc 22</text>
+            <rect x="245" y="90" width="150" height="44" rx="10" fill="#122038" stroke="#2a3a55"/>
+            <text x="320" y="118" text-anchor="middle" fill="#9aadc9" font-family="ui-monospace,monospace" font-size="14">CI 20</text>
+            <rect x="420" y="90" width="150" height="44" rx="10" fill="#122038" stroke="#2a3a55"/>
+            <text x="495" y="118" text-anchor="middle" fill="#9aadc9" font-family="ui-monospace,monospace" font-size="14">Docker 22</text>
+            <path d="M145 134 v40 H320 v0 H495 v40" fill="none" stroke="#fb7185" stroke-width="3"/>
+            <rect x="245" y="220" width="150" height="36" rx="14" fill="#fb7185"/>
+            <text x="320" y="244" text-anchor="middle" fill="#1b0a0e" font-family="ui-sans-serif,system-ui,sans-serif" font-size="14" font-weight="700">exit 1</text>
+            <text x="40" y="48" fill="#e8eefc" font-family="ui-sans-serif,system-ui,sans-serif" font-size="22" font-weight="700">RuntimeGate</text>
+            <text x="40" y="74" fill="#9aadc9" font-family="ui-sans-serif,system-ui,sans-serif" font-size="13">version drift · optional EOL check</text>
+          </svg>
+        </div>
+      </aside>
+    </header>
+
+    <main id="main">
+      <div class="grid-2" id="checks">
+        <section>
+          <h2>What it checks</h2>
+          <ul>
+            <li><code>runtimegate check</code> — primary command</li>
+            <li>Node.js, Python, and Go version declarations in version files, manifests, Dockerfiles, Compose, and GitHub Actions <code>setup-*</code> steps</li>
+            <li>Errors when pins disagree on the compatibility series (Node major; Python and Go major.minor)</li>
+            <li>Errors when a pin cannot satisfy a declared engines or requires-python range</li>
+            <li>Optional <code>--eol</code>: fail when a pin is past official end of support (vendored dates, no network)</li>
+            <li><code>--json</code>, <code>--lang</code>, <code>--ignore</code>, <code>--root</code></li>
+            <li>Exit codes: <code>0</code> pass, <code>1</code> violations, <code>2</code> usage or missing root</li>
+          </ul>
+        </section>
+        <section>
+          <h2>What it is not</h2>
+          <ul>
+            <li>Not a full YAML or TOML parser</li>
+            <li>Does not expand Docker <code>ARG</code> interpolation</li>
+            <li>Does not call a live end-of-life API — dates are a snapshot in the package</li>
+            <li>Does not prove production is running the pin, only that declared pins agree</li>
+            <li>Lite (the GitHub Action) is Node.js only</li>
+          </ul>
+        </section>
+      </div>
+
+      <section id="lite">
+        <h2>Lite vs the full CLI</h2>
+        <p>RuntimeGate Lite is a free GitHub Action that checks Node.js pins only. The $19 CLI adds Python and Go, a JSON report, and a command you can run on a laptop or in any CI. The Action tree is ready locally and is <strong>not published to GitHub yet</strong>.</p>
+      </section>
+
+      <section id="ci">
+        <h2>CI sketch</h2>
+        <p class="note" style="margin-top:0">From the bundled workflow sketch. Prefer reading a version file in <code>setup-node</code> so CI cannot drift from the pin developers use.</p>
+        <div class="terminal" aria-label="Sample GitHub Actions workflow">
+          <div class="bar">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="bar-cmd">.github/workflows/runtimegate-example.yml</span>
+          </div>
+<pre><span class="c-muted"># Example only — not published. Copy into a consuming repository.</span>
+name: RuntimeGate
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install RuntimeGate
+        run: npm install -g .
+
+      - name: Check runtime version drift
+        run: runtimegate check --eol</pre>
+        </div>
+      </section>
+
+      <section id="limits">
+        <h2>Honest limits</h2>
+        <ul>
+          <li>Workflow and Compose parsing is best-effort, not a complete YAML implementation.</li>
+          <li><code>requires-python</code> is read from a simple assignment line in <code>pyproject.toml</code>.</li>
+          <li>A CI matrix is allowed to test several versions; entries still must satisfy a declared range.</li>
+          <li>End-of-support dates were snapshotted on 10 November 2026 from the official Node.js, Python, and Go schedules. Re-check the table when cutting a release.</li>
+          <li>On that snapshot, Node 20 ended 30 April 2026 and Python 3.10 ended 1 October 2026. Those are official dates, not estimates.</li>
+        </ul>
+      </section>
+
+      <section id="buy">
+        <h2>Buy the packaged CLI</h2>
+        <p>When checkout is live, this page will point at the Lemon Squeezy listing. Until then the button stays disabled. The packaged price is <strong>$19 USD, one-time</strong>. MIT source is included.</p>
+      </section>
+
+      <section class="cta-box" aria-label="Guides">
+        <h2>Guides</h2>
+        <p>Three draft articles on version drift, GitHub Actions version files, and finding end-of-support Node pins. They are local drafts and not published.</p>
+        <p><a class="cta-link" href="guides/index.html">Read the guides &rarr;</a></p>
+      </section>
+
+      <section id="faq" class="faq">
+        <h2>FAQ</h2>
+        <details>
+          <summary>Is this the same as EnvGate?</summary>
+          <p>No. EnvGate checks environment files for missing keys, placeholders, and a narrow set of secret shapes. RuntimeGate checks whether runtime version pins agree. They share an audience (CI and DevOps) and the same “fail the job, not the deploy” idea.</p>
+        </details>
+        <details>
+          <summary>Why $19 if the source is MIT?</summary>
+          <p>MIT allows selling copies. The price is for a packaged, tested release with docs and a CI sketch, not exclusive ownership of the code. Buyers (and others) may redistribute under MIT terms.</p>
+        </details>
+        <details>
+          <summary>Does <code>--eol</code> need network access?</summary>
+          <p>No. Dates are vendored in the package, with sources cited in the docs. They can go stale; the snapshot date is printed in <code>src/eol.js</code>.</p>
+        </details>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-row">
+        <div>
+          RuntimeGate 0.1.0 by Emilio Straubel · $19 one-time · MIT source included · draft site, not published, no tracking
+        </div>
+        <div class="footer-links">
+          <a href="index.html">Home</a>
+          <a href="guides/index.html">Guides</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="terms.html">Terms</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+  <script>
+    (function () {
+      var btn = document.getElementById("buy-btn");
+      if (!btn) return;
+      var url = (btn.getAttribute("data-checkout-url") || "").trim();
+      if (!url) return;
+      btn.disabled = false;
+      btn.textContent = "Buy RuntimeGate — $19";
+      btn.addEventListener("click", function () {
+        window.location.href = url;
+      });
+    })();
+  </script>
+</body>
+</html>

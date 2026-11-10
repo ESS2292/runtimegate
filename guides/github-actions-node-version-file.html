@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Use a version file in GitHub Actions so CI cannot drift — RuntimeGate Guides</title>
+  <meta name="description" content="How actions/setup-node&#x27;s node-version-file input keeps GitHub Actions on the same Node.js version as .nvmrc, and what it does not fix on its own." />
+  <meta name="author" content="Emilio Straubel" />
+  <meta name="robots" content="noindex" />
+  <meta property="og:title" content="Use a version file in GitHub Actions so CI cannot drift — RuntimeGate Guides" />
+  <meta property="og:description" content="How actions/setup-node&#x27;s node-version-file input keeps GitHub Actions on the same Node.js version as .nvmrc, and what it does not fix on its own." />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="RuntimeGate" />
+  <meta property="og:image" content="../og-image.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Use a version file in GitHub Actions so CI cannot drift — RuntimeGate Guides" />
+  <meta name="twitter:description" content="How actions/setup-node&#x27;s node-version-file input keeps GitHub Actions on the same Node.js version as .nvmrc, and what it does not fix on its own." />
+  <meta name="twitter:image" content="../og-image.svg" />
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="icon" href="../og-image.svg" type="image/svg+xml" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Primary">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark" aria-hidden="true">rg</span>
+        RuntimeGate
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#checks">What it checks</a></li>
+        <li><a href="../index.html#pricing">Pricing</a></li>
+        <li><a href="index.html" aria-current="page">Guides</a></li>
+        <li><a href="../index.html#faq">FAQ</a></li>
+      </ul>
+    </nav>
+    <main id="main" class="article">
+      <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
+      <section>
+        <div class="eyebrow">Guide &middot; Draft &middot; November 10, 2026</div>
+        <h1>Use a version file in GitHub Actions so CI cannot drift</h1>
+        <p class="lead">Point setup-node at .nvmrc (or .node-version) instead of a hardcoded number, then still check Docker and other pins.</p>
+        <p><code>actions/setup-node</code> can take a literal <code>node-version</code>, or it can read a file already in the repo. The file form is the one that keeps CI attached to the same pin developers use locally.</p>
+        <pre><code>- uses: actions/setup-node@v4
+  with:
+    node-version-file: .nvmrc</code></pre>
+        <p>The action supports <code>.nvmrc</code>, <code>.node-version</code>, and other files documented by GitHub. If the file is missing, the step fails, which is better than silently falling back to whatever the runner image ships.</p>
+        <h2>Why a hardcoded version is brittle</h2>
+        <p>A workflow that says <code>node-version: "22"</code> will keep installing 22 after <code>.nvmrc</code> is bumped to 24, unless someone remembers the workflow. Chromatic’s write-up (linked in the drift guide) includes the complementary failure: if CI is left on “whatever LTS the runner has,” checks start failing when that LTS changes out from under you.</p>
+        <p>Prefer the version file as the only number you have to edit. If you also need a compatibility matrix (for example 22 and 24), keep the matrix explicit and make sure each entry still satisfies the range in <code>package.json</code> <code>engines</code>. A matrix is a deliberate set of versions, not a second source of truth for production.</p>
+        <h2>What this does not fix</h2>
+        <p>Pointing Actions at <code>.nvmrc</code> does not update a Dockerfile or a Cloud Build image. Those still have to be pinned separately, and they still need a check so they cannot drift. That is the rest of the job RuntimeGate does: it reads the version file, the workflow, and the Dockerfile in one pass.</p>
+        <p>Also, a version file is not a substitute for recording <em>end of support</em>. Node 20 reached official end of support on 30 April 2026, according to the <a href="https://raw.githubusercontent.com/nodejs/Release/main/schedule.json">Node.js release schedule</a>. A repo can be internally consistent on an unsupported major. An optional <code>--eol</code> check covers that case, using vendored official dates rather than a network call.</p>
+      </section>
+      <section class="cta-box" aria-label="RuntimeGate">
+        <h2>Want the check in CI?</h2>
+        <p>RuntimeGate Lite (a free GitHub Action, not published yet) checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python and Go, with a JSON report and an optional end-of-support check, locally or in any CI.</p>
+        <p><strong>$19 one-time</strong> &middot; Node 18+ &middot; zero runtime dependencies &middot; MIT source included. Checkout is not live.</p>
+        <p><a class="cta-link" href="../index.html#pricing">See RuntimeGate &rarr;</a></p>
+      </section>
+      <section>
+        <h2>Related guides</h2>
+        <ul>
+          <li><a href="nvmrc-dockerfile-ci-node-version-drift.html">Do your .nvmrc, Dockerfile, and CI agree on Node.js?</a></li>
+          <li><a href="find-eol-node-pins-after-node-20.html">Node 20 is past end of support — find every pin in the repo</a></li>
+        </ul>
+      </section>
+
+    </main>
+    <footer>
+      <div class="footer-row">
+        <div>RuntimeGate 0.1.0 by Emilio Straubel · draft pages, not published</div>
+        <div class="footer-links">
+          <a href="../index.html">Home</a>
+          <a href="index.html">Guides</a>
+          <a href="../privacy.html">Privacy</a>
+          <a href="../terms.html">Terms</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

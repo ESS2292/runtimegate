@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Do your .nvmrc, Dockerfile, and CI agree on Node.js? — RuntimeGate Guides</title>
+  <meta name="description" content="Why Node.js versions drift across .nvmrc, Dockerfiles, and GitHub Actions, including documented production and CI failures, and how to keep one source of truth." />
+  <meta name="author" content="Emilio Straubel" />
+  <meta name="robots" content="noindex" />
+  <meta property="og:title" content="Do your .nvmrc, Dockerfile, and CI agree on Node.js? — RuntimeGate Guides" />
+  <meta property="og:description" content="Why Node.js versions drift across .nvmrc, Dockerfiles, and GitHub Actions, including documented production and CI failures, and how to keep one source of truth." />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="RuntimeGate" />
+  <meta property="og:image" content="../og-image.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Do your .nvmrc, Dockerfile, and CI agree on Node.js? — RuntimeGate Guides" />
+  <meta name="twitter:description" content="Why Node.js versions drift across .nvmrc, Dockerfiles, and GitHub Actions, including documented production and CI failures, and how to keep one source of truth." />
+  <meta name="twitter:image" content="../og-image.svg" />
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="icon" href="../og-image.svg" type="image/svg+xml" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Primary">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark" aria-hidden="true">rg</span>
+        RuntimeGate
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#checks">What it checks</a></li>
+        <li><a href="../index.html#pricing">Pricing</a></li>
+        <li><a href="index.html" aria-current="page">Guides</a></li>
+        <li><a href="../index.html#faq">FAQ</a></li>
+      </ul>
+    </nav>
+    <main id="main" class="article">
+      <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
+      <section>
+        <div class="eyebrow">Guide &middot; Draft &middot; November 10, 2026</div>
+        <h1>Do your .nvmrc, Dockerfile, and CI agree on Node.js?</h1>
+        <p class="lead">Version files, Docker images, and CI workflows each declare a Node.js version. When they drift, tests can stay green and production can still break.</p>
+        <p>A Node.js version is often declared in more than one place: a version file such as <code>.nvmrc</code> or <code>.node-version</code>, the <code>engines</code> field in <code>package.json</code>, a <code>FROM node:…</code> line in a Dockerfile, and a <code>node-version</code> input on <code>actions/setup-node</code>. Anyone on the team can update one of those and miss the others.</p>
+        <p>That is not only messy. It can break production after CI stays green. Chromatic, a development agency, <a href="https://chromatichq.com/insights/one-nodejs-version-rule-them-all/">wrote up a real outage</a>: a dependency update passed in GitHub Actions and in a preview environment, then failed in production. Production was on Node 10, the theme’s <code>.nvmrc</code> was 12, and Actions was using the then-current LTS (14). Only production hit the break, because only production was still on 10. In a second project, unpinned Actions started failing when GitHub’s runner images moved to a new LTS.</p>
+        <p>A similar trap showed up in a merged pull request on Google’s <code>race-condition</code> repo in July 2026: CI was on Node 24, the Dockerfile was on 26, and a Cloud Build step was still on 24. The maintainers added a custom script to assert that those pins agreed, because a pin honored by only one consumer had already caused <code>npm ci</code> failures. See <a href="https://github.com/GoogleCloudPlatform/race-condition/pull/200">PR #200</a>.</p>
+        <h2>Make one file the source of truth</h2>
+        <p>A practical pattern is: put the exact version in <code>.nvmrc</code> (or <code>.node-version</code>), point GitHub Actions at that file with <code>node-version-file</code>, keep <code>engines</code> as a range that the pin satisfies, and pin the Docker image to the same major (or the same full version if you need a reproducible patch).</p>
+        <pre><code>- uses: actions/setup-node@v4
+  with:
+    node-version-file: .nvmrc
+    cache: npm</code></pre>
+        <p>Do not also set <code>node-version</code> in the same step. GitHub’s setup action treats an explicit <code>node-version</code> as the value to install; a hardcoded number next to a version file is how CI drifts again the next time someone bumps only <code>.nvmrc</code>.</p>
+        <h2>Then assert the rest</h2>
+        <p>Dockerfiles and Cloud Build configs usually cannot read <code>.nvmrc</code> on their own. That is why a CI check that compares the declarations — and fails the job when they disagree — is useful. RuntimeGate is one such check: it scans those files and exits <code>1</code> on a major mismatch. It is a consistency gate, not proof that production is actually running the pin.</p>
+        <p>If you only need Node.js in GitHub Actions, RuntimeGate Lite (a free Action, not published yet) covers that subset. The full CLI also checks Python and Go.</p>
+      </section>
+      <section class="cta-box" aria-label="RuntimeGate">
+        <h2>Want the check in CI?</h2>
+        <p>RuntimeGate Lite (a free GitHub Action, not published yet) checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python and Go, with a JSON report and an optional end-of-support check, locally or in any CI.</p>
+        <p><strong>$19 one-time</strong> &middot; Node 18+ &middot; zero runtime dependencies &middot; MIT source included. Checkout is not live.</p>
+        <p><a class="cta-link" href="../index.html#pricing">See RuntimeGate &rarr;</a></p>
+      </section>
+      <section>
+        <h2>Related guides</h2>
+        <ul>
+          <li><a href="github-actions-node-version-file.html">Use a version file in GitHub Actions so CI cannot drift</a></li>
+          <li><a href="find-eol-node-pins-after-node-20.html">Node 20 is past end of support — find every pin in the repo</a></li>
+        </ul>
+      </section>
+
+    </main>
+    <footer>
+      <div class="footer-row">
+        <div>RuntimeGate 0.1.0 by Emilio Straubel · draft pages, not published</div>
+        <div class="footer-links">
+          <a href="../index.html">Home</a>
+          <a href="index.html">Guides</a>
+          <a href="../privacy.html">Privacy</a>
+          <a href="../terms.html">Terms</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
