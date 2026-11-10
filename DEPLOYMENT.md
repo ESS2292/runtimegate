@@ -8,16 +8,25 @@ The buy button stays disabled while `data-checkout-url` is empty. Do not point i
 
 Support contact on these pages links to GitHub Issues on [ESS2292/runtimegate-action](https://github.com/ESS2292/runtimegate-action/issues). Do not invent a support email.
 
+
 ## Files
 
-- `index.html`, `privacy.html`, `terms.html`, `styles.css`, `og-image.svg`, `robots.txt`, `.nojekyll`
-- `guides/` (index plus six guides)
+- `index.html`, `privacy.html`, `terms.html`, `styles.css`, `robots.txt`, `.nojekyll`
+- `og-image.svg` and `og-image.png` (pages use the PNG for Open Graph and Twitter cards)
+- `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`
+- `guides/`
 - `sitemap.xml` (prepared for launch; not referenced by the live `robots.txt`)
 
 ## When launch is approved
 
-1. Confirm canonical and absolute `og:url` / `og:image` tags (a PNG export is more widely accepted than SVG).
-2. Replace `robots.txt` with `robots.launch.txt` only when the site should be indexed.
-3. Remove `noindex` (or set `index,follow`) on every HTML page.
-4. Set `data-checkout-url` to the live Lemon Squeezy URL after publish approval.
-5. Replace the GitHub Issues support contact with a real seller support email. Do not invent an address.
+Follow the ordered checklist in `/workspace/envgate-launch/LAUNCH-RUNBOOK.md`. To flip this site locally:
+
+```bash
+/workspace/envgate-launch/scripts/go-live.sh --dry-run runtimegate 'https://LIVE-CHECKOUT-URL'
+# only after approval:
+/workspace/envgate-launch/scripts/go-live.sh --apply runtimegate 'https://LIVE-CHECKOUT-URL'
+```
+
+The script sets `data-checkout-url` on `#buy-btn`, enables the button, replaces `noindex` with `index,follow` on every HTML page, copies `robots.launch.txt` over `robots.txt`, and refreshes sitemap lastmod dates. It does not commit, push, or submit the sitemap. Review the diff, then commit and push this repository so GitHub Pages updates.
+
+Do not point `data-checkout-url` at a test-mode checkout on this public site. A PNG `og:image` is already in place. Replace the GitHub Issues support contact with a real seller support email only when one has been chosen. Do not invent an address.

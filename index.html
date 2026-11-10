@@ -13,14 +13,22 @@
   <meta property="og:site_name" content="RuntimeGate" />
   <meta property="og:url" content="https://ess2292.github.io/runtimegate/" />
   <link rel="canonical" href="https://ess2292.github.io/runtimegate/" />
-  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.svg" />
+  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="RuntimeGate — fail CI when runtime version pins disagree" />
   <meta name="twitter:description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included." />
-  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.svg" />
+  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta name="twitter:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "RuntimeGate", "applicationCategory": "DeveloperApplication", "operatingSystem": "Node.js 18+", "offers": {"@type": "Offer", "price": "19", "priceCurrency": "USD"}, "description": "A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "url": "https://ess2292.github.io/runtimegate/"}</script>
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="icon" href="og-image.svg" type="image/svg+xml" />
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -31,12 +39,12 @@
         RuntimeGate
       </a>
       <ul class="nav-links">
-        <li><a href="index.html#checks">What it checks</a></li>
-        <li><a href="index.html#ci">CI</a></li>
-        <li><a href="index.html#limits">Limits</a></li>
-        <li><a href="index.html#pricing">Pricing</a></li>
+        <li><a href="#checks">What it checks</a></li>
+        <li><a href="#ci">CI</a></li>
+        <li><a href="#limits">Limits</a></li>
+        <li><a href="#pricing">Pricing</a></li>
         <li><a href="guides/index.html">Guides</a></li>
-        <li><a href="index.html#faq">FAQ</a></li>
+        <li><a href="#faq">FAQ</a></li>
         <li><a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a></li>
       </ul>
     </nav>
@@ -70,7 +78,7 @@
         <button type="button" id="buy-btn" class="buy-btn" disabled data-checkout-url="">Checkout coming soon</button>
         <p class="buy-note">Checkout is not live yet. The buy button stays disabled until a live checkout URL is approved. Payments will be processed by Lemon Squeezy when the store opens.</p>
         <div class="art" aria-hidden="true">
-          <svg class="art-svg" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stylized RuntimeGate graphic">
+          <svg class="art-svg" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stop-color="#38bdf8" stop-opacity=".9"/>
@@ -128,7 +136,7 @@
         <h2>Lite vs the full CLI</h2>
         <p>RuntimeGate Lite is a free GitHub Action that checks Node.js pins only. Use it as <code>ESS2292/runtimegate-action@v1</code>. The $19 CLI adds Python and Go, a JSON report, and a command you can run on a laptop or in any CI. Checkout is not live.</p>
         <p><a class="cta-link" href="https://github.com/ESS2292/runtimegate-action">Open the RuntimeGate Lite Action &rarr;</a></p>
-        <div class="terminal" aria-label="RuntimeGate Lite GitHub Action example">
+        <div class="terminal">
           <div class="bar">
             <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
             <span class="bar-cmd">.github/workflows/runtime.yml</span>
@@ -145,8 +153,8 @@
 
       <section id="ci">
         <h2>CI sketch</h2>
-        <p class="note" style="margin-top:0">From the bundled workflow sketch. Prefer reading a version file in <code>setup-node</code> so CI cannot drift from the pin developers use.</p>
-        <div class="terminal" aria-label="Sample GitHub Actions workflow">
+        <p class="note">From the bundled workflow sketch. Prefer reading a version file in <code>setup-node</code> so CI cannot drift from the pin developers use.</p>
+        <div class="terminal">
           <div class="bar">
             <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
             <span class="bar-cmd">.github/workflows/runtimegate-example.yml</span>
@@ -225,7 +233,13 @@ jobs:
     </main>
 
     <footer>
-      <div class="footer-row">
+      <nav class="family-nav" aria-label="Other tools in this family">
+        <span class="family-label">Also:</span>
+          <a href="https://ess2292.github.io/envgate/">EnvGate</a>
+          <a href="https://ess2292.github.io/runtimegate/" aria-current="page">RuntimeGate</a>
+          <a href="https://ess2292.github.io/lockgate/">LockGate</a>
+      </nav>
+<div class="footer-row">
         <div>
           RuntimeGate 0.1.0 by Emilio Straubel · $19 one-time · MIT source included · pre-launch site, not indexed, no tracking
         </div>

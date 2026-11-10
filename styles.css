@@ -358,6 +358,8 @@ pre {
 .c-warn { color: var(--warn); }
 .c-accent { color: var(--accent); }
 
+h2 + .note { margin-top: 0; }
+
 .note {
   color: var(--muted);
   font-size: 0.92rem;
@@ -527,4 +529,46 @@ footer {
   font-size: 0.88rem;
   line-height: 1.5;
   border-top: 1px solid var(--line);
+}
+
+/* Launch-readiness: visible focus, family links, tighter mobile nav */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+.buy-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.family-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.85rem;
+}
+
+.family-nav .family-label {
+  color: var(--muted);
+}
+
+.family-nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.family-nav a:hover,
+.family-nav a[aria-current="page"] {
+  color: var(--text);
+}
+
+@media (max-width: 720px) {
+  .nav-links {
+    gap: 0.2rem 0.7rem;
+  }
+  .nav-links a {
+    display: inline-block;
+    padding: 0.4rem 0.1rem;
+  }
 }
