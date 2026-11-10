@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RuntimeGate — fail CI when runtime version pins disagree</title>
-  <meta name="description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included." />
+  <meta name="description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, Go, or Rust. Optional end-of-support check. MIT source included." />
   <meta name="author" content="Emilio Straubel" />
   <meta name="robots" content="noindex" />
   <meta property="og:title" content="RuntimeGate — fail CI when runtime version pins disagree" />
-  <meta property="og:description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included." />
+  <meta property="og:description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, Go, or Rust. Optional end-of-support check. MIT source included." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="RuntimeGate" />
   <meta property="og:url" content="https://ess2292.github.io/runtimegate/" />
@@ -20,10 +20,10 @@
   <meta property="og:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="RuntimeGate — fail CI when runtime version pins disagree" />
-  <meta name="twitter:description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included." />
+  <meta name="twitter:description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, Go, or Rust. Optional end-of-support check. MIT source included." />
   <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
   <meta name="twitter:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "RuntimeGate", "applicationCategory": "DeveloperApplication", "operatingSystem": "Node.js 18+", "offers": {"@type": "Offer", "price": "19", "priceCurrency": "USD"}, "description": "A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "url": "https://ess2292.github.io/runtimegate/"}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "RuntimeGate", "applicationCategory": "DeveloperApplication", "operatingSystem": "Node.js 18+", "offers": {"@type": "Offer", "price": "19", "priceCurrency": "USD"}, "description": "A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, Go, or Rust. Optional end-of-support check. MIT source included.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "url": "https://ess2292.github.io/runtimegate/"}</script>
   <meta name="theme-color" content="#0b1220" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
@@ -54,10 +54,10 @@
         <div class="eyebrow">Developer CLI · MIT source included · pre-launch site, not indexed</div>
         <h1>RuntimeGate — fail CI when runtime pins disagree, not the deploy</h1>
         <p class="lead">
-          A small Node.js CLI that checks whether your Dockerfile, CI, and version files agree on Node.js, Python, or Go — and can optionally fail when a pin is past official end of support.
+          A small Node.js CLI that checks whether your Dockerfile, CI, and version files agree on Node.js, Python, Go, or Rust — and can optionally fail when a pin is past official end of support.
         </p>
         <div class="meta">
-          <span class="chip"><em>v0.1.0</em></span>
+          <span class="chip"><em>v0.2.0</em></span>
           <span class="chip">Node <em>18+</em></span>
           <span class="chip">Runtime deps <em>0</em></span>
           <span class="chip">License <em>MIT</em></span>
@@ -65,7 +65,7 @@
         </div>
         <p class="note">
           RuntimeGate is a local CLI you run against a checkout. It is a consistency gate, not a guarantee that production actually runs the pinned version.
-          The 0.1.0 source + CLI bundle is MIT licensed. Checkout is not live. This site is a public pre-launch draft and is not indexed.
+          The 0.2.0 source + CLI bundle is MIT licensed. Checkout is not live. This site is a public pre-launch draft and is not indexed.
         </p>
       </div>
 
@@ -112,8 +112,8 @@
           <h2>What it checks</h2>
           <ul>
             <li><code>runtimegate check</code> — primary command</li>
-            <li>Node.js, Python, and Go version declarations in version files, manifests, Dockerfiles, Compose, and GitHub Actions <code>setup-*</code> steps</li>
-            <li>Errors when pins disagree on the compatibility series (Node major; Python and Go major.minor)</li>
+            <li>Node.js, Python, Go, and Rust version declarations in version files (including <code>.tool-versions</code> and <code>mise.toml</code>), manifests (including Volta, Pipfile, and <code>go.work</code>), Dockerfiles (including <code>Dockerfile-CUDA</code> and <code>*.dockerfile</code>), Compose, <code>devcontainer.json</code>, and GitHub Actions <code>setup-*</code> steps</li>
+            <li>Errors when pins disagree on the compatibility series (Node major; Python, Go, and Rust major.minor)</li>
             <li>Errors when a pin cannot satisfy a declared engines or requires-python range</li>
             <li>Optional <code>--eol</code>: fail when a pin is past official end of support (vendored dates, no network)</li>
             <li><code>--json</code>, <code>--lang</code>, <code>--ignore</code>, <code>--root</code>, <code>--engines-scope</code></li>
@@ -134,7 +134,7 @@
 
       <section id="lite">
         <h2>Lite vs the full CLI</h2>
-        <p>RuntimeGate Lite is a free GitHub Action that checks Node.js pins only. Use it as <code>ESS2292/runtimegate-action@v1</code>. The $19 CLI adds Python and Go, a JSON report, and a command you can run on a laptop or in any CI. Checkout is not live.</p>
+        <p>RuntimeGate Lite is a free GitHub Action that checks Node.js pins only. Use it as <code>ESS2292/runtimegate-action@v1</code>. The $19 CLI adds Python, Go, and Rust, a JSON report, and a command you can run on a laptop or in any CI. Rust pins are compared for drift; they are not classified by <code>--eol</code>. Checkout is not live.</p>
         <p><a class="cta-link" href="https://github.com/ESS2292/runtimegate-action">Open the RuntimeGate Lite Action &rarr;</a></p>
         <div class="terminal">
           <div class="bar">
@@ -187,8 +187,9 @@ jobs:
       <section id="limits">
         <h2>Honest limits</h2>
         <ul>
-          <li>Workflow and Compose parsing is best-effort, not a complete YAML implementation. Inline comments and GitHub-style <code>20.x</code> matrix values are supported.</li>
-          <li><code>requires-python</code> is read from a simple assignment line in <code>pyproject.toml</code>.</li>
+          <li>Workflow, Compose, and <code>mise.toml</code> parsing is best-effort, not a complete YAML or TOML implementation. Inline comments, GitHub-style <code>20.x</code> matrix values, and major-only Actions pins such as <code>node-version: 22</code> are supported.</li>
+          <li><code>requires-python</code> is read from a simple assignment line in <code>pyproject.toml</code>. Dockerfile names such as <code>Dockerfile-CUDA</code> and <code>*.dockerfile</code> are recognized by a filename heuristic, not a formal Docker specification.</li>
+          <li>A <code>go.work</code> <code>go</code> line is a workspace minimum, not a pin: a lower <code>go.mod</code> language version is allowed. Rust pins are compared for drift; <code>--eol</code> does not classify Rust because rustup has no versioned end-of-support table in the vendored snapshot.</li>
           <li>A CI matrix is allowed to test several versions; entries still must satisfy a declared range in the same workspace. By default, <code>engines</code> and <code>requires-python</code> are scoped to the package that declared them (GitHub workflows count as the repo root). Use <code>--engines-scope all</code> (or the Action input <code>engines-scope: all</code>) to compare every range to every pin.</li>
           <li>Directories named <code>build</code> are skipped as compile output, except under <code>docker/</code> or <code>dockerfiles/</code>, so paths such as <code>docker/build/x86_64/Dockerfile</code> are still scanned.</li>
           <li>End-of-support dates were snapshotted on 10 November 2026 from the official Node.js, Python, and Go schedules. Re-check the table when cutting a release.</li>
@@ -241,7 +242,7 @@ jobs:
       </nav>
 <div class="footer-row">
         <div>
-          RuntimeGate 0.1.0 by Emilio Straubel · $19 one-time · MIT source included · pre-launch site, not indexed, no tracking
+          RuntimeGate 0.2.0 by Emilio Straubel · $19 one-time · MIT source included · pre-launch site, not indexed, no tracking
         </div>
         <div class="footer-links">
           <a href="index.html">Home</a>
