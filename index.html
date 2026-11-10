@@ -108,7 +108,7 @@
             <li>Errors when pins disagree on the compatibility series (Node major; Python and Go major.minor)</li>
             <li>Errors when a pin cannot satisfy a declared engines or requires-python range</li>
             <li>Optional <code>--eol</code>: fail when a pin is past official end of support (vendored dates, no network)</li>
-            <li><code>--json</code>, <code>--lang</code>, <code>--ignore</code>, <code>--root</code></li>
+            <li><code>--json</code>, <code>--lang</code>, <code>--ignore</code>, <code>--root</code>, <code>--engines-scope</code></li>
             <li>Exit codes: <code>0</code> pass, <code>1</code> violations, <code>2</code> usage or missing root</li>
           </ul>
         </section>
@@ -179,9 +179,10 @@ jobs:
       <section id="limits">
         <h2>Honest limits</h2>
         <ul>
-          <li>Workflow and Compose parsing is best-effort, not a complete YAML implementation.</li>
+          <li>Workflow and Compose parsing is best-effort, not a complete YAML implementation. Inline comments and GitHub-style <code>20.x</code> matrix values are supported.</li>
           <li><code>requires-python</code> is read from a simple assignment line in <code>pyproject.toml</code>.</li>
-          <li>A CI matrix is allowed to test several versions; entries still must satisfy a declared range.</li>
+          <li>A CI matrix is allowed to test several versions; entries still must satisfy a declared range in the same workspace. By default, <code>engines</code> and <code>requires-python</code> are scoped to the package that declared them (GitHub workflows count as the repo root). Use <code>--engines-scope all</code> (or the Action input <code>engines-scope: all</code>) to compare every range to every pin.</li>
+          <li>Directories named <code>build</code> are skipped as compile output, except under <code>docker/</code> or <code>dockerfiles/</code>, so paths such as <code>docker/build/x86_64/Dockerfile</code> are still scanned.</li>
           <li>End-of-support dates were snapshotted on 10 November 2026 from the official Node.js, Python, and Go schedules. Re-check the table when cutting a release.</li>
           <li>On that snapshot, Node 20 ended 30 April 2026 and Python 3.10 ended 1 October 2026. Those are official dates, not estimates.</li>
         </ul>
