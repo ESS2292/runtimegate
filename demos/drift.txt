@@ -1,0 +1,10 @@
+RuntimeGate checked 4 declarations (node, python, go, rust).
+
+Errors (3):
+  [major-mismatch] Node.js pins disagree on the major version (20 vs 22).
+  [range-unsatisfied] actions/setup-node#node-version in .github/workflows/ci.yml (20) cannot satisfy package.json#engines.node ">=22" in package.json.
+  [range-unsatisfied] .nvmrc in .nvmrc (20) cannot satisfy package.json#engines.node ">=22" in package.json.
+
+Warnings (1):
+  [hardcoded-ci] Node.js CI hardcodes a version (actions/setup-node#node-version@.github/workflows/ci.yml:20) while a version file is present or referenced. Prefer node-version-file / python-version-file / go-version-file so CI cannot drift.
+# exit 1

@@ -1,0 +1,3 @@
+RuntimeGate checked 4 declarations (node, python, go, rust).
+OK — declared runtimes agree.
+# exit 0

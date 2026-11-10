@@ -40,6 +40,7 @@
       </a>
       <ul class="nav-links">
         <li><a href="#checks">What it checks</a></li>
+        <li><a href="#demo">Demo</a></li>
         <li><a href="#ci">CI</a></li>
         <li><a href="#limits">Limits</a></li>
         <li><a href="#pricing">Pricing</a></li>
@@ -151,6 +152,50 @@
 
       </section>
 
+      <section id="demo">
+        <h2>Real demo output</h2>
+        <p class="note">These are recorded runs against the package examples. Fixtures are synthetic. The output is from the real RuntimeGate 0.2.1 CLI, including exit codes.</p>
+
+        <figure class="demo-rec">
+          <video autoplay loop muted playsinline controls poster="demos/runtimegate-demo.gif" width="960" height="540">
+            <source src="demos/runtimegate-demo.mp4" type="video/mp4" />
+            <img src="demos/runtimegate-demo.gif" width="960" height="540" alt="Terminal recording: RuntimeGate passes on a clean example where runtime pins agree, then fails when Node pins disagree (20 vs 22)." />
+          </video>
+          <figcaption>RuntimeGate on the package examples: a clean tree exits 0; a tree with disagreeing Node pins exits 1. Recorded from the real 0.2.1 CLI. The # exit lines are the process exit codes, not CLI output.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <div class="terminal">
+            <div class="bar">
+              <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+              <span class="bar-cmd">node bin/runtimegate.js check examples/clean</span>
+            </div>
+<pre><span class="c-accent">RuntimeGate checked 4 declarations (node, python, go, rust).</span>
+<span class="c-ok">OK — declared runtimes agree.</span>
+<span class="c-ok"># exit 0</span>
+</pre>
+          </div>
+
+          <div class="terminal">
+            <div class="bar">
+              <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+              <span class="bar-cmd">node bin/runtimegate.js check examples/drift</span>
+            </div>
+<pre><span class="c-accent">RuntimeGate checked 4 declarations (node, python, go, rust).</span>
+
+<span class="c-err">Errors (3):</span>
+<span class="c-err">  [major-mismatch] Node.js pins disagree on the major version (20 vs 22).</span>
+<span class="c-err">  [range-unsatisfied] actions/setup-node#node-version in .github/workflows/ci.yml (20) cannot satisfy package.json#engines.node &quot;&gt;=22&quot; in package.json.</span>
+<span class="c-err">  [range-unsatisfied] .nvmrc in .nvmrc (20) cannot satisfy package.json#engines.node &quot;&gt;=22&quot; in package.json.</span>
+
+<span class="c-warn">Warnings (1):</span>
+<span class="c-warn">  [hardcoded-ci] Node.js CI hardcodes a version (actions/setup-node#node-version@.github/workflows/ci.yml:20) while a version file is present or referenced. Prefer node-version-file / python-version-file / go-version-file so CI cannot drift.</span>
+<span class="c-err"># exit 1</span>
+</pre>
+          </div>
+        </div>
+      </section>
+
       <section id="ci">
         <h2>CI sketch</h2>
         <p class="note">From the bundled workflow sketch. Prefer reading a version file in <code>setup-node</code> so CI cannot drift from the pin developers use.</p>
@@ -239,6 +284,7 @@ jobs:
           <a href="https://ess2292.github.io/envgate/">EnvGate</a>
           <a href="https://ess2292.github.io/runtimegate/" aria-current="page">RuntimeGate</a>
           <a href="https://ess2292.github.io/lockgate/">LockGate</a>
+          <a href="https://ess2292.github.io/servicegate/">ServiceGate</a>
       </nav>
 <div class="footer-row">
         <div>
