@@ -11,11 +11,13 @@
   <meta property="og:description" content="Node.js 20 reached official end of support on 30 April 2026. Here is every common place a repo can still be pinning it, and how to check them together." />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="RuntimeGate" />
-  <meta property="og:image" content="../og-image.svg" />
+  <meta property="og:url" content="https://ess2292.github.io/runtimegate/guides/find-eol-node-pins-after-node-20.html" />
+  <link rel="canonical" href="https://ess2292.github.io/runtimegate/guides/find-eol-node-pins-after-node-20.html" />
+  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.svg" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Node 20 is past end of support — find every pin in the repo — RuntimeGate Guides" />
   <meta name="twitter:description" content="Node.js 20 reached official end of support on 30 April 2026. Here is every common place a repo can still be pinning it, and how to check them together." />
-  <meta name="twitter:image" content="../og-image.svg" />
+  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.svg" />
   <link rel="stylesheet" href="../styles.css" />
   <link rel="icon" href="../og-image.svg" type="image/svg+xml" />
 </head>
@@ -32,12 +34,13 @@
         <li><a href="../index.html#pricing">Pricing</a></li>
         <li><a href="index.html" aria-current="page">Guides</a></li>
         <li><a href="../index.html#faq">FAQ</a></li>
+        <li><a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a></li>
       </ul>
     </nav>
     <main id="main" class="article">
       <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
       <section>
-        <div class="eyebrow">Guide &middot; Draft &middot; November 10, 2026</div>
+        <div class="eyebrow">Guide &middot; November 10, 2026</div>
         <h1>Node 20 is past end of support — find every pin in the repo</h1>
         <p class="lead">Official Node.js 20 support ended 30 April 2026. Updating .nvmrc is not enough if a Dockerfile or workflow still pins 20.</p>
         <p>Node.js 20 (codename Iron) reached official end of support on <strong>30 April 2026</strong>. That date is the <code>end</code> field in the <a href="https://raw.githubusercontent.com/nodejs/Release/main/schedule.json">nodejs/Release schedule.json</a>, fetched for this guide on 10 November 2026. On that date, the even-numbered lines still in the schedule as supported LTS releases were 22, 24, and 26.</p>
@@ -57,7 +60,7 @@
       </section>
       <section class="cta-box" aria-label="RuntimeGate">
         <h2>Want the check in CI?</h2>
-        <p>RuntimeGate Lite (a free GitHub Action, not published yet) checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python and Go, with a JSON report and an optional end-of-support check, locally or in any CI.</p>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite GitHub Action</a> checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python and Go, with a JSON report and an optional end-of-support check, locally or in any CI. Checkout is not live.</p>
         <p><strong>$19 one-time</strong> &middot; Node 18+ &middot; zero runtime dependencies &middot; MIT source included. Checkout is not live.</p>
         <p><a class="cta-link" href="../index.html#pricing">See RuntimeGate &rarr;</a></p>
       </section>
@@ -72,12 +75,14 @@
     </main>
     <footer>
       <div class="footer-row">
-        <div>RuntimeGate 0.1.0 by Emilio Straubel · draft pages, not published</div>
+        <div>RuntimeGate 0.1.0 by Emilio Straubel · pre-launch pages, not indexed</div>
         <div class="footer-links">
           <a href="../index.html">Home</a>
           <a href="index.html">Guides</a>
           <a href="../privacy.html">Privacy</a>
           <a href="../terms.html">Terms</a>
+          <a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a>
+          <a href="https://github.com/ESS2292/runtimegate-action/issues">Issues</a>
         </div>
       </div>
     </footer>

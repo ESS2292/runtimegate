@@ -11,14 +11,15 @@
   <meta property="og:description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="RuntimeGate" />
-  <meta property="og:image" content="og-image.svg" />
+  <meta property="og:url" content="https://ess2292.github.io/runtimegate/" />
+  <link rel="canonical" href="https://ess2292.github.io/runtimegate/" />
+  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.svg" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="RuntimeGate — fail CI when runtime version pins disagree" />
   <meta name="twitter:description" content="A $19 one-time Node.js CLI that fails CI when Dockerfile, CI, and version files disagree on Node.js, Python, or Go. Optional end-of-support check. MIT source included." />
-  <meta name="twitter:image" content="og-image.svg" />
+  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.svg" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="og-image.svg" type="image/svg+xml" />
-  <!-- Canonical and absolute og:url/og:image will be set when a public URL exists. Do not invent one. -->
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -35,12 +36,13 @@
         <li><a href="index.html#pricing">Pricing</a></li>
         <li><a href="guides/index.html">Guides</a></li>
         <li><a href="index.html#faq">FAQ</a></li>
+        <li><a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a></li>
       </ul>
     </nav>
 
     <header class="hero">
       <div>
-        <div class="eyebrow">Developer CLI · MIT source included · draft site, not published</div>
+        <div class="eyebrow">Developer CLI · MIT source included · pre-launch site, not indexed</div>
         <h1>RuntimeGate — fail CI when runtime pins disagree, not the deploy</h1>
         <p class="lead">
           A small Node.js CLI that checks whether your Dockerfile, CI, and version files agree on Node.js, Python, or Go — and can optionally fail when a pin is past official end of support.
@@ -54,7 +56,7 @@
         </div>
         <p class="note">
           RuntimeGate is a local CLI you run against a checkout. It is a consistency gate, not a guarantee that production actually runs the pinned version.
-          The 0.1.0 source + CLI bundle is MIT licensed. Checkout is not live. This site is a local draft and is not indexed.
+          The 0.1.0 source + CLI bundle is MIT licensed. Checkout is not live. This site is a public pre-launch draft and is not indexed.
         </p>
       </div>
 
@@ -65,7 +67,7 @@
           You are buying a packaged release and seller-provided packaging/docs convenience — not exclusive proprietary rights to the code.
         </p>
         <button type="button" id="buy-btn" class="buy-btn" disabled data-checkout-url="">Checkout coming soon</button>
-        <p class="buy-note">Checkout is not live yet. Payments will be processed by Lemon Squeezy when the store opens. Do not publish this site until that URL is real.</p>
+        <p class="buy-note">Checkout is not live yet. The buy button stays disabled until a live checkout URL is approved. Payments will be processed by Lemon Squeezy when the store opens.</p>
         <div class="art" aria-hidden="true">
           <svg class="art-svg" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stylized RuntimeGate graphic">
             <defs>
@@ -123,7 +125,21 @@
 
       <section id="lite">
         <h2>Lite vs the full CLI</h2>
-        <p>RuntimeGate Lite is a free GitHub Action that checks Node.js pins only. The $19 CLI adds Python and Go, a JSON report, and a command you can run on a laptop or in any CI. The Action tree is ready locally and is <strong>not published to GitHub yet</strong>.</p>
+        <p>RuntimeGate Lite is a free GitHub Action that checks Node.js pins only. Use it as <code>ESS2292/runtimegate-action@v1</code>. The $19 CLI adds Python and Go, a JSON report, and a command you can run on a laptop or in any CI. Checkout is not live.</p>
+        <p><a class="cta-link" href="https://github.com/ESS2292/runtimegate-action">Open the RuntimeGate Lite Action &rarr;</a></p>
+        <div class="terminal" aria-label="RuntimeGate Lite GitHub Action example">
+          <div class="bar">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="bar-cmd">.github/workflows/runtime.yml</span>
+          </div>
+<pre>- uses: actions/checkout@v5
+
+- name: Check Node.js version pins
+  uses: ESS2292/runtimegate-action@v1
+  with:
+    eol: "true"</pre>
+        </div>
+
       </section>
 
       <section id="ci">
@@ -134,7 +150,7 @@
             <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
             <span class="bar-cmd">.github/workflows/runtimegate-example.yml</span>
           </div>
-<pre><span class="c-muted"># Example only — not published. Copy into a consuming repository.</span>
+<pre><span class="c-muted"># Example only — copy into a consuming repository. The paid CLI is not published yet.</span>
 name: RuntimeGate
 
 on:
@@ -177,7 +193,7 @@ jobs:
 
       <section class="cta-box" aria-label="Guides">
         <h2>Guides</h2>
-        <p>Three draft articles on version drift, GitHub Actions version files, and finding end-of-support Node pins. They are local drafts and not published.</p>
+        <p>Three articles on version drift, GitHub Actions version files, and finding end-of-support Node pins. They are public but pre-launch, and are not indexed.</p>
         <p><a class="cta-link" href="guides/index.html">Read the guides &rarr;</a></p>
       </section>
 
@@ -195,19 +211,29 @@ jobs:
           <summary>Does <code>--eol</code> need network access?</summary>
           <p>No. Dates are vendored in the package, with sources cited in the docs. They can go stale; the snapshot date is printed in <code>src/eol.js</code>.</p>
         </details>
+        <details>
+          <summary>Where is the free GitHub Action?</summary>
+          <p>RuntimeGate Lite is published at <a href="https://github.com/ESS2292/runtimegate-action">ESS2292/runtimegate-action</a>. Use <code>ESS2292/runtimegate-action@v1</code>. It checks Node.js pins only. Questions can be opened as <a href="https://github.com/ESS2292/runtimegate-action/issues">GitHub Issues</a>.</p>
+        </details>
+        <details>
+          <summary>How do I get support?</summary>
+          <p>Open an issue on the <a href="https://github.com/ESS2292/runtimegate-action/issues">RuntimeGate Lite repository</a>. A seller support email will be added before the paid listing goes live. Do not use an invented address.</p>
+        </details>
       </section>
     </main>
 
     <footer>
       <div class="footer-row">
         <div>
-          RuntimeGate 0.1.0 by Emilio Straubel · $19 one-time · MIT source included · draft site, not published, no tracking
+          RuntimeGate 0.1.0 by Emilio Straubel · $19 one-time · MIT source included · pre-launch site, not indexed, no tracking
         </div>
         <div class="footer-links">
           <a href="index.html">Home</a>
           <a href="guides/index.html">Guides</a>
           <a href="privacy.html">Privacy</a>
           <a href="terms.html">Terms</a>
+          <a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a>
+          <a href="https://github.com/ESS2292/runtimegate-action/issues">Issues</a>
         </div>
       </div>
     </footer>

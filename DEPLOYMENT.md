@@ -1,20 +1,22 @@
 # Deploying the RuntimeGate marketing site
 
-This folder is a **local draft**. It has no public URL. Do not create a GitHub repository, Pages site, or store listing from this file. Publish only after owner approval.
+This folder is the public GitHub Pages site for RuntimeGate, served at https://ess2292.github.io/runtimegate/. The paid CLI source is not in this repository.
 
-Until launch, every HTML page includes `<meta name="robots" content="noindex">` and `robots.txt` disallows all crawlers. There is no canonical URL because no public URL exists yet.
+The site stays **noindex**. Every HTML page includes `<meta name="robots" content="noindex">` and `robots.txt` disallows all crawlers. Do not replace `robots.txt` with `robots.launch.txt`, and do not remove `noindex`, until launch is approved.
+
+The buy button stays disabled while `data-checkout-url` is empty. Do not point it at a test-mode checkout on this public site, and do not set a live Lemon Squeezy URL until publish approval.
+
+Support contact on these pages links to GitHub Issues on [ESS2292/runtimegate-action](https://github.com/ESS2292/runtimegate-action/issues). Do not invent a support email.
 
 ## Files
 
 - `index.html`, `privacy.html`, `terms.html`, `styles.css`, `og-image.svg`, `robots.txt`, `.nojekyll`
-- `guides/` (index plus three draft guides)
+- `guides/` (index plus three guides)
 
-The buy button stays disabled while `data-checkout-url` is empty. Do not point it at a test-mode checkout on a public site.
+## When launch is approved
 
-## When a public URL exists
-
-1. Add canonical and absolute `og:url` / `og:image` tags (a PNG export is more widely accepted than SVG).
+1. Confirm canonical and absolute `og:url` / `og:image` tags (a PNG export is more widely accepted than SVG).
 2. Replace `robots.txt` with `robots.launch.txt` only when the site should be indexed.
 3. Remove `noindex` (or set `index,follow`) on every HTML page.
 4. Set `data-checkout-url` to the live Lemon Squeezy URL after publish approval.
-5. Replace every `TODO: add the seller support email before launch.` placeholder. Do not invent an address.
+5. Replace the GitHub Issues support contact with a real seller support email. Do not invent an address.
