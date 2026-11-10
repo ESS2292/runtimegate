@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Keep .python-version and requires-python in agreement — RuntimeGate Guides</title>
+  <meta name="description" content="Why .python-version, pyproject.toml requires-python, and setup-python can install different versions, including how python-version-file treats each file." />
+  <meta name="author" content="Emilio Straubel" />
+  <meta name="robots" content="noindex" />
+  <link rel="canonical" href="https://ess2292.github.io/runtimegate/guides/python-version-vs-pyproject-requires-python.html" />
+  <meta property="og:title" content="Keep .python-version and requires-python in agreement — RuntimeGate Guides" />
+  <meta property="og:description" content="Why .python-version, pyproject.toml requires-python, and setup-python can install different versions, including how python-version-file treats each file." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://ess2292.github.io/runtimegate/guides/python-version-vs-pyproject-requires-python.html" />
+  <meta property="og:site_name" content="RuntimeGate" />
+  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.svg" />
+  <meta property="article:published_time" content="2026-11-10" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Keep .python-version and requires-python in agreement — RuntimeGate Guides" />
+  <meta name="twitter:description" content="Why .python-version, pyproject.toml requires-python, and setup-python can install different versions, including how python-version-file treats each file." />
+  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.svg" />
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Keep .python-version and requires-python in agreement", "description": "Why .python-version, pyproject.toml requires-python, and setup-python can install different versions, including how python-version-file treats each file.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-10", "dateModified": "2026-11-10", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/python-version-vs-pyproject-requires-python.html", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.svg"}</script>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="icon" href="../og-image.svg" type="image/svg+xml" />
+</head>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Primary">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark" aria-hidden="true">rg</span>
+        RuntimeGate
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#checks">What it checks</a></li>
+        <li><a href="../index.html#pricing">Pricing</a></li>
+        <li><a href="index.html" aria-current="page">Guides</a></li>
+        <li><a href="../index.html#faq">FAQ</a></li>
+        <li><a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a></li>
+      </ul>
+    </nav>
+    <main id="main" class="article">
+      <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
+      <section>
+        <div class="eyebrow">Guide &middot; November 10, 2026</div>
+        <h1>Keep .python-version and requires-python in agreement</h1>
+        <p class="lead"><code>.python-version</code> is a pin. <code>requires-python</code> in <code>pyproject.toml</code> is a range. GitHub Actions can read either file, and those two modes do not do the same thing.</p>
+
+        <p>Python projects often declare a version in more than one place: a <code>.python-version</code> file (used by pyenv, uv, and similar tools), a <code>requires-python</code> field under <code>[project]</code> in <code>pyproject.toml</code>, a <code>FROM python:…</code> line in a Dockerfile, and a <code>python-version</code> or <code>python-version-file</code> input on <a href="https://github.com/actions/setup-python"><code>actions/setup-python</code></a>. Updating one of those and missing the others is a common way for local installs, CI, and the image to diverge.</p>
+
+        <h2>A pin and a range are easy to confuse</h2>
+        <p><code>requires-python</code> is a constraint on which interpreters the project supports, such as <code>&gt;=3.13</code> or <code>&gt;=3.13.7</code>. It is not, by itself, an instruction to install one exact version. <code>.python-version</code> usually is that instruction: “use 3.13,” or “use 3.13.7.” When the pin is only a major.minor and the range has a patch floor, the two can disagree even if they look similar.</p>
+        <p>That exact case is still open on the uv tracker. In <a href="https://github.com/astral-sh/uv/issues/16012">astral-sh/uv#16012</a> (opened 24 September 2025), a project had <code>.python-version</code> set to <code>3.13</code> and <code>requires-python = "&gt;=3.13.7"</code>. uv selected an already-managed 3.13.2 and then failed the constraint. A maintainer wrote that combining the pin and the range automatically would be hard, and recommended putting the patch version in <code>.python-version</code> or omitting the file. The issue was still open when this guide was written on 10 November 2026.</p>
+
+        <h2>What setup-python actually reads</h2>
+        <p>The official setup-python README says the <code>python-version</code> input is optional. If you omit it, the action tries the default <code>.python-version</code> file; if that file is missing, it uses whatever Python is already on <code>PATH</code>. That PATH version “varies between runners and can be changed unexpectedly,” so the README recommends always setting <code>python-version</code> or <code>python-version-file</code> explicitly.</p>
+        <p>The <a href="https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md">advanced usage guide</a> shows both of these:</p>
+        <pre><code>- uses: actions/setup-python@v5
+  with:
+    python-version-file: '.python-version'
+
+# or
+- uses: actions/setup-python@v5
+  with:
+    python-version-file: 'pyproject.toml'</code></pre>
+        <p>Those two inputs are not interchangeable. If both <code>python-version</code> and <code>python-version-file</code> are set, the file is ignored and the hardcoded version wins. And when the file is <code>pyproject.toml</code>, the action resolves a version from <code>requires-python</code> rather than from a pin file. Astral’s <a href="https://docs.astral.sh/uv/guides/integration/github/">guide to using uv in GitHub Actions</a> states the difference directly: <code>python-version-file: ".python-version"</code> uses the project pin; <code>python-version-file: "pyproject.toml"</code> “ignore[s] the pin and use[s] the latest version compatible with the project’s <code>requires-python</code> constraint.”</p>
+        <p>That pyproject support was requested in <a href="https://github.com/actions/setup-python/issues/542">actions/setup-python#542</a> (opened 17 November 2022) so CI would not need a second, duplicated version file. The request was reasonable. The catch is that “latest version that satisfies the range” will move when a new Python release lands, which may or may not be what you want in a production image or a lockstep CI job.</p>
+
+        <h2>A pattern that stays in agreement</h2>
+        <ul>
+          <li>Put the version you actually want to run in <code>.python-version</code>. Include the patch if <code>requires-python</code> has a patch floor, as the uv thread recommends.</li>
+          <li>Keep <code>requires-python</code> as the supported range, and make sure the pin satisfies it.</li>
+          <li>In GitHub Actions, set <code>python-version-file: .python-version</code> and do not also set <code>python-version</code>.</li>
+          <li>Pin the Docker image to the same major.minor (or the same patch, if you need it).</li>
+        </ul>
+        <p>If you intentionally test several versions, use a matrix and accept that those extra versions are not the production pin. Matrix entries should still satisfy <code>requires-python</code>.</p>
+
+        <h2>How to catch drift in CI</h2>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite GitHub Action</a> checks Node.js pins only, so it will not compare <code>.python-version</code> with <code>requires-python</code>. If the same repository also declares Node.js versions, add Lite for that subset:</p>
+        <pre><code>- uses: actions/checkout@v5
+
+- name: Check Node.js version pins
+  uses: ESS2292/runtimegate-action@v1
+  with:
+    eol: "true"</code></pre>
+        <p>The full RuntimeGate CLI also scans Python and Go: version files, <code>requires-python</code>, Dockerfiles, Compose, and <code>setup-python</code> / <code>setup-go</code> steps. It treats Python compatibility as the major.minor series, and it can optionally fail when a pin is past official end of support (Python 3.10 reached end of life on 1 October 2026, per the <a href="https://devguide.python.org/versions/">Python devguide versions table</a>). Checkout for the CLI is not live.</p>
+      </section>
+      <section class="cta-box" aria-label="RuntimeGate">
+        <h2>Want the check in CI?</h2>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite GitHub Action</a> checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python and Go, with a JSON report and an optional end-of-support check, locally or in any CI. Checkout is not live.</p>
+        <p><strong>$19 one-time</strong> &middot; Node 18+ &middot; zero runtime dependencies &middot; MIT source included. Checkout is not live.</p>
+        <p><a class="cta-link" href="../index.html#pricing">See RuntimeGate &rarr;</a></p>
+      </section>
+
+      <section>
+        <h2>Related guides</h2>
+        <ul>
+          <li><a href="package-json-engines-vs-nvmrc-setup-node.html">When package.json engines, .nvmrc, and setup-node disagree</a></li>
+          <li><a href="gomod-vs-setup-go-dockerfile.html">When go.mod, setup-go, and the Dockerfile disagree</a></li>
+          <li><a href="github-actions-node-version-file.html">Use a version file in GitHub Actions so CI cannot drift</a></li>
+        </ul>
+      </section>
+    </main>
+    <footer>
+      <div class="footer-row">
+        <div>RuntimeGate 0.1.0 by Emilio Straubel · pre-launch pages, not indexed</div>
+        <div class="footer-links">
+          <a href="../index.html">Home</a>
+          <a href="index.html">Guides</a>
+          <a href="../privacy.html">Privacy</a>
+          <a href="../terms.html">Terms</a>
+          <a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a>
+          <a href="https://github.com/ESS2292/runtimegate-action/issues">Issues</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>When go.mod, setup-go, and the Dockerfile disagree — RuntimeGate Guides</title>
+  <meta name="description" content="Why a go.mod go line, actions/setup-go, and a golang Docker image can drift, including GOTOOLCHAIN=local failures and how go-version-file works." />
+  <meta name="author" content="Emilio Straubel" />
+  <meta name="robots" content="noindex" />
+  <link rel="canonical" href="https://ess2292.github.io/runtimegate/guides/gomod-vs-setup-go-dockerfile.html" />
+  <meta property="og:title" content="When go.mod, setup-go, and the Dockerfile disagree — RuntimeGate Guides" />
+  <meta property="og:description" content="Why a go.mod go line, actions/setup-go, and a golang Docker image can drift, including GOTOOLCHAIN=local failures and how go-version-file works." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://ess2292.github.io/runtimegate/guides/gomod-vs-setup-go-dockerfile.html" />
+  <meta property="og:site_name" content="RuntimeGate" />
+  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.svg" />
+  <meta property="article:published_time" content="2026-11-10" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="When go.mod, setup-go, and the Dockerfile disagree — RuntimeGate Guides" />
+  <meta name="twitter:description" content="Why a go.mod go line, actions/setup-go, and a golang Docker image can drift, including GOTOOLCHAIN=local failures and how go-version-file works." />
+  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.svg" />
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "When go.mod, setup-go, and the Dockerfile disagree", "description": "Why a go.mod go line, actions/setup-go, and a golang Docker image can drift, including GOTOOLCHAIN=local failures and how go-version-file works.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-10", "dateModified": "2026-11-10", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/gomod-vs-setup-go-dockerfile.html", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.svg"}</script>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="icon" href="../og-image.svg" type="image/svg+xml" />
+</head>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Primary">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark" aria-hidden="true">rg</span>
+        RuntimeGate
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#checks">What it checks</a></li>
+        <li><a href="../index.html#pricing">Pricing</a></li>
+        <li><a href="index.html" aria-current="page">Guides</a></li>
+        <li><a href="../index.html#faq">FAQ</a></li>
+        <li><a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a></li>
+      </ul>
+    </nav>
+    <main id="main" class="article">
+      <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
+      <section>
+        <div class="eyebrow">Guide &middot; November 10, 2026</div>
+        <h1>When go.mod, setup-go, and the Dockerfile disagree</h1>
+        <p class="lead">The <code>go</code> line in <code>go.mod</code> is a minimum. A hardcoded <code>go-version</code>, a floating <code>stable</code> tag, or an older <code>FROM golang:…</code> image can still be too old to build the module, and CI that only reads <code>go.mod</code> will not see a stale Dockerfile.</p>
+
+        <p>Go’s official <a href="https://go.dev/doc/toolchain">toolchain documentation</a> is clear about the <code>go</code> line: it “declares the minimum required Go version for using the module.” A toolchain older than that line refuses to load the module. If automatic toolchain switching is disabled, you get a failure of the form <code>go.mod requires go &gt;= … (running go …; GOTOOLCHAIN=local)</code>.</p>
+
+        <h2>A real Docker build that CI did not catch</h2>
+        <p>That is not hypothetical. On 4 May 2026, stashapp/stash opened <a href="https://github.com/stashapp/stash/issues/6888">issue #6888</a>: <code>make docker-build</code> failed because a backend Dockerfile was still <code>FROM golang:1.24.3</code> while <code>go.mod</code> declared <code>go 1.25.0</code>. The error was exactly the <code>GOTOOLCHAIN=local</code> message above. The issue is now closed.</p>
+        <p>The interesting part is why their GitHub Actions job stayed green. The main workflow’s generate job already used <code>actions/setup-go</code> with <code>go-version-file: go.mod</code>, so CI installed a 1.25 toolchain and never exercised the older release-style Docker image. Pointing setup-go at <code>go.mod</code> is the right way to keep <em>CI</em> in lockstep. It does not, by itself, check every <code>FROM golang:…</code> line.</p>
+
+        <h2>What setup-go reads, and what overrides it</h2>
+        <p><a href="https://github.com/actions/setup-go"><code>actions/setup-go</code></a> can take a hardcoded <code>go-version</code> or a <code>go-version-file</code> pointing at <code>go.mod</code>, <code>go.work</code>, <code>.go-version</code>, or <code>.tool-versions</code>. Official docs say that if both inputs are set, <code>go-version</code> wins — the same trap as setup-node and setup-python.</p>
+        <p>From setup-go v6 onward, a <code>go.mod</code> file is read this way: if a <code>toolchain</code> directive is present, that version is used; otherwise the action falls back to the <code>go</code> directive. The <a href="https://github.com/actions/setup-go/blob/main/docs/advanced-usage.md">advanced usage guide</a> also notes that a <code>go</code> line with a patch (for example <code>go 1.25.0</code>) installs that patch, while a line without a patch requests the latest available patch of that series.</p>
+        <pre><code>- uses: actions/setup-go@v6
+  with:
+    go-version-file: go.mod</code></pre>
+        <p>A floating value such as <code>go-version: "stable"</code> is a different failure mode. A merged pull request on another project, <a href="https://github.com/cozystack/terraform-provider-cozystack/pull/9">cozystack/terraform-provider-cozystack#9</a> (merged 4 June 2026), switched CI from <code>go-version: "stable"</code> to <code>go-version-file: go.mod</code> after the runner’s “stable” toolchain was older than a pending <code>go 1.26.4</code> directive and failed with <code>GOTOOLCHAIN=local</code>.</p>
+
+        <h2>Keep the image at least as new as the module</h2>
+        <p>For Docker, the image tag should be at least the major.minor required by the <code>go</code> line — and the same patch, if you need bit-for-bit reproducibility. Official Go images that set <code>GOTOOLCHAIN=local</code> will not quietly download a newer toolchain for you. Prefer bumping <code>FROM golang:…</code> in the same change that bumps <code>go.mod</code>, including Dockerfiles used only for release builds.</p>
+        <p>Support windows move too. Go’s <a href="https://go.dev/doc/devel/release">release policy</a> is that each major release is supported until there are two newer major releases. Go 1.27.0 was released on 19 August 2026, so on that day 1.25 left official support. A repo can have <code>go.mod</code>, CI, and Docker in agreement on 1.25 and still be past end of support.</p>
+
+        <h2>How to catch this in CI</h2>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite GitHub Action</a> checks Node.js pins only. If the repository also has a Node frontend or tool version — a <code>setup-node</code> step, a <code>FROM node:…</code> line, or an <code>engines</code> field — add Lite for that subset:</p>
+        <pre><code>- uses: actions/checkout@v5
+
+- name: Check Node.js version pins
+  uses: ESS2292/runtimegate-action@v1
+  with:
+    eol: "true"</code></pre>
+        <p>The full RuntimeGate CLI also compares Go pins across <code>go.mod</code>, Dockerfiles, Compose, and <code>setup-go</code> steps, and can optionally fail when a pin is past official end of support using vendored dates (snapshot 10 November 2026). It treats Go compatibility as the major.minor series, and it does not treat a CI matrix as a mismatch against a single Dockerfile. Checkout for the CLI is not live.</p>
+      </section>
+      <section class="cta-box" aria-label="RuntimeGate">
+        <h2>Want the check in CI?</h2>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite GitHub Action</a> checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python and Go, with a JSON report and an optional end-of-support check, locally or in any CI. Checkout is not live.</p>
+        <p><strong>$19 one-time</strong> &middot; Node 18+ &middot; zero runtime dependencies &middot; MIT source included. Checkout is not live.</p>
+        <p><a class="cta-link" href="../index.html#pricing">See RuntimeGate &rarr;</a></p>
+      </section>
+
+      <section>
+        <h2>Related guides</h2>
+        <ul>
+          <li><a href="python-version-vs-pyproject-requires-python.html">Keep .python-version and requires-python in agreement</a></li>
+          <li><a href="package-json-engines-vs-nvmrc-setup-node.html">When package.json engines, .nvmrc, and setup-node disagree</a></li>
+          <li><a href="find-eol-node-pins-after-node-20.html">Node 20 is past end of support — find every pin in the repo</a></li>
+        </ul>
+      </section>
+    </main>
+    <footer>
+      <div class="footer-row">
+        <div>RuntimeGate 0.1.0 by Emilio Straubel · pre-launch pages, not indexed</div>
+        <div class="footer-links">
+          <a href="../index.html">Home</a>
+          <a href="index.html">Guides</a>
+          <a href="../privacy.html">Privacy</a>
+          <a href="../terms.html">Terms</a>
+          <a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a>
+          <a href="https://github.com/ESS2292/runtimegate-action/issues">Issues</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

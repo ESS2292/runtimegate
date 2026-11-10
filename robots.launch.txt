@@ -1,5 +1,6 @@
+# Launch-ready robots.txt for RuntimeGate.
+# At launch: replace robots.txt with this file AND remove <meta name="robots" content="noindex"> from every page.
 User-agent: *
 Allow: /
 
-# Add a Sitemap line once a public absolute URL exists.
-
+Sitemap: https://ess2292.github.io/runtimegate/sitemap.xml

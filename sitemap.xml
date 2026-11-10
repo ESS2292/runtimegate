@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prepared for launch. Not referenced by the live robots.txt yet; robots.launch.txt points here. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://ess2292.github.io/runtimegate/</loc><lastmod>2026-11-10</lastmod></url>
+  <url><loc>https://ess2292.github.io/runtimegate/privacy.html</loc><lastmod>2026-11-10</lastmod></url>
+  <url><loc>https://ess2292.github.io/runtimegate/terms.html</loc><lastmod>2026-11-10</lastmod></url>
+  <url><loc>https://ess2292.github.io/runtimegate/guides/</loc><lastmod>2026-11-10</lastmod></url>
+  <url><loc>https://ess2292.github.io/runtimegate/guides/package-json-engines-vs-nvmrc-setup-node.html</loc><lastmod>2026-11-10</lastmod></url>
+  <url><loc>https://ess2292.github.io/runtimegate/guides/python-version-vs-pyproject-requires-python.html</loc><lastmod>2026-11-10</lastmod></url>
+  <url><loc>https://ess2292.github.io/runtimegate/guides/gomod-vs-setup-go-dockerfile.html</loc><lastmod>2026-11-10</lastmod></url>
+  <url><loc>https://ess2292.github.io/runtimegate/guides/nvmrc-dockerfile-ci-node-version-drift.html</loc><lastmod>2026-11-10</lastmod></url>
+  <url><loc>https://ess2292.github.io/runtimegate/guides/github-actions-node-version-file.html</loc><lastmod>2026-11-10</lastmod></url>
+  <url><loc>https://ess2292.github.io/runtimegate/guides/find-eol-node-pins-after-node-20.html</loc><lastmod>2026-11-10</lastmod></url>
+</urlset>

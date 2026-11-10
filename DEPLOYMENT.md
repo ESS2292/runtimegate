@@ -11,7 +11,8 @@ Support contact on these pages links to GitHub Issues on [ESS2292/runtimegate-ac
 ## Files
 
 - `index.html`, `privacy.html`, `terms.html`, `styles.css`, `og-image.svg`, `robots.txt`, `.nojekyll`
-- `guides/` (index plus three guides)
+- `guides/` (index plus six guides)
+- `sitemap.xml` (prepared for launch; not referenced by the live `robots.txt`)
 
 ## When launch is approved
 
