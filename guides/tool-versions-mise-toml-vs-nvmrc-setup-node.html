@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>When .tool-versions or mise.toml disagree with .nvmrc, setup-node, and Docker — RuntimeGate Guides</title>
+  <meta name="description" content="How asdf and mise version files drift from .nvmrc, actions/setup-node, setup-python, and Dockerfiles, what each tool actually reads, and how to make one file the source of truth." />
+  <meta name="author" content="Emilio Straubel" />
+  <meta name="robots" content="noindex" />
+  <meta property="og:title" content="When .tool-versions or mise.toml disagree with .nvmrc, setup-node, and Docker — RuntimeGate Guides" />
+  <meta property="og:description" content="How asdf and mise version files drift from .nvmrc, actions/setup-node, setup-python, and Dockerfiles, what each tool actually reads, and how to make one file the source of truth." />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="RuntimeGate" />
+  <meta property="og:url" content="https://ess2292.github.io/runtimegate/guides/tool-versions-mise-toml-vs-nvmrc-setup-node.html" />
+  <link rel="canonical" href="https://ess2292.github.io/runtimegate/guides/tool-versions-mise-toml-vs-nvmrc-setup-node.html" />
+  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
+  <meta property="article:published_time" content="2026-11-16" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="When .tool-versions or mise.toml disagree with .nvmrc, setup-node, and Docker — RuntimeGate Guides" />
+  <meta name="twitter:description" content="How asdf and mise version files drift from .nvmrc, actions/setup-node, setup-python, and Dockerfiles, what each tool actually reads, and how to make one file the source of truth." />
+  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta name="twitter:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "When .tool-versions or mise.toml disagree with .nvmrc, setup-node, and Docker", "description": "How asdf and mise version files drift from .nvmrc, actions/setup-node, setup-python, and Dockerfiles, what each tool actually reads, and how to make one file the source of truth.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-16", "dateModified": "2026-11-16", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/tool-versions-mise-toml-vs-nvmrc-setup-node.html", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.png"}</script>
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Primary">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark" aria-hidden="true">rg</span>
+        RuntimeGate
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#checks">What it checks</a></li>
+        <li><a href="../index.html#ci">CI</a></li>
+        <li><a href="../index.html#limits">Limits</a></li>
+        <li><a href="../index.html#pricing">Pricing</a></li>
+        <li><a href="index.html" aria-current="page">Guides</a></li>
+        <li><a href="../index.html#faq">FAQ</a></li>
+        <li><a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a></li>
+      </ul>
+    </nav>
+    <main id="main" class="article">
+      <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
+      <section>
+        <div class="eyebrow">Guide &middot; November 16, 2026</div>
+        <h1>When .tool-versions or mise.toml disagree with .nvmrc, setup-node, and Docker</h1>
+        <p class="lead">A team moves to asdf or mise, adds <code>.tool-versions</code> or <code>mise.toml</code>, and leaves the old <code>.nvmrc</code>, the CI step, and the Dockerfile where they were. Each one still installs a version, just not the same one.</p>
+        <p>The cause is simple: each tool reads only certain files, and it ignores the rest without telling you. Here is what each tool reads, according to its own docs and source. After that come a real drift example and a setup with one source of truth.</p>
+      </section>
+      <section>
+        <h2>Which file each tool actually reads</h2>
+        <ul>
+          <li><strong>asdf</strong> reads <code>.tool-versions</code>: one <code>&lt;tool&gt; &lt;version&gt;</code> per line, with <code>#</code> comments. The Node.js plugin is named <code>nodejs</code>. Extra versions on a line are fallbacks, for example <code>python 3.7.2 2.7.15 system</code>. By default asdf does not read other managers’ files such as <code>.nvmrc</code>; that requires <code>legacy_version_file = yes</code> and a plugin that supports it (<a href="https://asdf-vm.com/manage/configuration.html">asdf configuration</a>).</li>
+          <li><strong>mise</strong> reads <code>mise.toml</code> (<code>[tools]</code>, for example <code>node = "24"</code>) and also reads <code>.tool-versions</code>. If both are in the same directory and both declare a tool, <strong><code>mise.toml</code> wins</strong>. mise reads <code>.nvmrc</code> and <code>.python-version</code> (“idiomatic version files”) only for tools listed in <code>idiomatic_version_file_enable_tools</code>, and that list is empty by default (<a href="https://mise.jdx.dev/dev-tools/versions.html">mise version requests and version files</a>, <a href="https://mise.jdx.dev/configuration.html">mise.toml reference</a>). So a developer on mise can have a stale <code>.nvmrc</code> in the repo and never install from it.</li>
+          <li><strong>mise version requests are not always exact.</strong> <code>node = "24"</code> means a 24.x release, and <code>"lts"</code> and <code>"latest"</code> are aliases that move. mise’s docs say asdf expects exact versions, so a <code>.tool-versions</code> that asdf users also read should hold concrete versions.</li>
+          <li><strong>actions/setup-node</strong> reads only the file you give it in <code>node-version-file</code>. Its docs list <code>.nvmrc</code>, <code>.node-version</code>, <code>.tool-versions</code>, and <code>package.json</code>. Support for <code>mise.toml</code> (<code>[tools]</code> <code>node</code>) was added in <a href="https://github.com/actions/setup-node/releases/tag/v7.1.0">v7.1.0</a>. Earlier majors don’t list <code>mise.toml</code> in their docs. If <code>node-version</code> and <code>node-version-file</code> are both set, <code>node-version</code> is used (<a href="https://github.com/actions/setup-node/blob/main/docs/advanced-usage.md#node-version-file">setup-node advanced usage</a>).</li>
+          <li><strong>actions/setup-python</strong> takes <code>python-version-file</code> and documents <code>.python-version</code>, <code>pyproject.toml</code>, <code>.tool-versions</code>, and <code>Pipfile</code>. If <code>python-version</code> is also set, the file is ignored (<a href="https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#using-the-python-version-file-input">setup-python advanced usage</a>). In its source, any <code>.toml</code> file goes through the pyproject reader, which looks for <code>project.requires-python</code> or Poetry’s Python dependency, not mise’s <code>[tools]</code>. For Python, point it at <code>.tool-versions</code> or <code>.python-version</code>, not <code>mise.toml</code>.</li>
+          <li><strong>Docker</strong> reads none of these files. A <code>FROM</code> line can only use <code>ARG</code> values declared before the first <code>FROM</code> (<a href="https://docs.docker.com/reference/dockerfile/#understand-how-arg-and-from-interact">Dockerfile reference</a>), so the image tag is either written out or passed in at build time.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>One gotcha: fallback versions in a file CI reads</h2>
+        <p>asdf allows several versions on one line. The CI actions do not parse that format the same way. In setup-node’s source (<code>src/util.ts</code>), a non-JSON, non-TOML file is matched against a pattern that expects an optional <code>node</code>/<code>nodejs</code> name and then a single version on its own line. A line like <code>nodejs 22.11.0 20.18.0</code> does not match, and the code then falls back to the whole file text. setup-python’s <code>.tool-versions</code> reader also expects <code>python</code> followed by a single version. If CI reads <code>.tool-versions</code>, keep a single version on each line CI depends on.</p>
+      </section>
+      <section>
+        <h2>What drift looks like</h2>
+        <p>Here is a small repo partway through a move to asdf. <code>.tool-versions</code> was updated. <code>.nvmrc</code>, the Dockerfile, and the hardcoded Python version in CI were not:</p>
+        <pre><code># .tool-versions
+nodejs 22.11.0
+python 3.12.1
+
+# .nvmrc
+20
+
+# Dockerfile
+FROM node:20-alpine
+
+# .github/workflows/ci.yml (steps)
+- uses: actions/setup-node@v4
+  with:
+    node-version-file: .nvmrc
+- uses: actions/setup-python@v5
+  with:
+    python-version: '3.11'</code></pre>
+        <p>Developers using asdf or mise get Node 22.11.0 and Python 3.12.1. CI and the container get Node 20, and CI gets Python 3.11. Running the RuntimeGate CLI (0.2.1) on that repo printed this and exited <code>1</code>:</p>
+        <pre><code>$ runtimegate check .
+RuntimeGate checked 6 declarations (node, python, go, rust).
+
+Errors (2):
+  [major-mismatch] Node.js pins disagree on the major version (20 vs 22).
+  [series-mismatch] Python pins disagree on the major.minor series (3.11 vs 3.12).
+
+Warnings (2):
+  [loose-pin] Some Node.js pins are major-only (.nvmrc@.nvmrc:20, Dockerfile#FROM@Dockerfile:20-alpine) while others pin a minor or patch. A major-only tag can float.
+  [hardcoded-ci] Python CI hardcodes a version (actions/setup-python#python-version@.github/workflows/ci.yml:3.11) while a version file is present or referenced. Prefer node-version-file / python-version-file / go-version-file so CI cannot drift.</code></pre>
+      </section>
+      <section>
+        <h2>Make one file the source of truth</h2>
+        <p>If the team uses asdf, or uses both asdf and mise, make <code>.tool-versions</code> the source of truth. asdf, mise, setup-node (v4 and later document it), and setup-python (v5 and later document it) can all read it. Delete <code>.nvmrc</code> instead of keeping a second copy. Remember that mise ignores it by default anyway. Point both CI steps at the same file, and pin the Docker image to the same version:</p>
+        <pre><code># .tool-versions
+nodejs 22.11.0
+python 3.12.1
+
+# Dockerfile
+FROM node:22.11.0-alpine
+
+# .github/workflows/ci.yml (steps)
+- uses: actions/setup-node@v4
+  with:
+    node-version-file: .tool-versions
+- uses: actions/setup-python@v5
+  with:
+    python-version-file: .tool-versions</code></pre>
+        <p>Do not also set <code>node-version</code> or <code>python-version</code> in those steps. Both actions let the hardcoded input override the file. With the changes above, the same check printed this and exited <code>0</code>:</p>
+        <pre><code>$ runtimegate check .
+RuntimeGate checked 5 declarations (node, python, go, rust).
+OK — declared runtimes agree.</code></pre>
+        <p>If the team uses only mise, <code>mise.toml</code> can be the source of truth for Node, as long as CI uses <code>actions/setup-node</code> v7.1.0 or later with <code>node-version-file: mise.toml</code>. setup-python does not read mise’s <code>[tools]</code> table, so keep Python in a file it does read. If a repo has both <code>mise.toml</code> and <code>.tool-versions</code>, mise developers get the <code>mise.toml</code> value, while CI may read the other file. That is drift too. In the fixed repo above, adding a <code>mise.toml</code> with <code>node = "24"</code> made the check fail again:</p>
+        <pre><code>$ runtimegate check .
+RuntimeGate checked 6 declarations (node, python, go, rust).
+
+Errors (1):
+  [major-mismatch] Node.js pins disagree on the major version (22 vs 24).
+
+Warnings (1):
+  [loose-pin] Some Node.js pins are major-only (mise.toml#tools@mise.toml:24) while others pin a minor or patch. A major-only tag can float.</code></pre>
+      </section>
+      <section>
+        <h2>The Dockerfile still needs a check</h2>
+        <p>Docker can’t read <code>.tool-versions</code>. You can write the tag out, as above, or declare <code>ARG NODE_VERSION</code> before <code>FROM node:${NODE_VERSION}-alpine</code> and pass the value at build time. For example, <code>awk '$1=="nodejs"{print $2}' .tool-versions</code> prints <code>22.11.0</code> for the file above, and you can pass that with <code>--build-arg</code>. That moves the problem into your build scripts. A static check also can’t see the final value: RuntimeGate reports an interpolated <code>FROM</code> as a warning (<code>unresolved-interpolation</code>), not as a match. A literal tag plus a CI check that compares it with <code>.tool-versions</code> is easier to verify.</p>
+      </section>
+      <section>
+        <h2>What RuntimeGate reads in these files, and what it doesn’t</h2>
+        <ul>
+          <li><code>.tool-versions</code>: lines for <code>node</code>/<code>nodejs</code>, <code>python</code>, <code>go</code>/<code>golang</code>, and <code>rust</code>. It uses only the first version and ignores asdf fallbacks and <code>#</code> comments.</li>
+          <li>mise config: <code>mise.toml</code>, <code>.mise.toml</code>, <code>.config/mise.toml</code>, <code>.config/mise/config.toml</code>, <code>mise/config.toml</code>, and <code>.mise/config.toml</code>, including nested ones. It reads <code>[tools]</code> entries written as <code>node = "24"</code>, <code>node = { version = "24" }</code>, a list (the first entry counts), or a <code>[tools.node]</code> table. It does not read <code>mise.local.toml</code> or <code>conf.d</code> fragments. It is a narrow parser, not a full TOML implementation.</li>
+          <li><code>lts</code>, <code>latest</code>, and <code>system</code> are reported as floating and produce a warning, not a failure. <code>path:</code> and <code>ref:</code> requests produce an “unresolved” warning. For example, <code>node = "lts"</code> next to <code>nodejs 22.11.0</code> gives a <code>floating-tag</code> warning and exits <code>0</code>, even though mise resolves <code>lts</code> to a specific major. If you need the gate to fail, pin a number.</li>
+          <li>Node.js pins are compared by major version. Python pins are compared by major.minor series. It compares every file it finds; it does not model mise’s precedence. It records which file <code>node-version-file</code> names, but it does not open that file to confirm what CI will install.</li>
+        </ul>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite Action</a> checks Node.js only, and that includes Node lines in <code>.tool-versions</code> and Node in <code>mise.toml</code>. The full CLI also checks Python and Go. Checkout is not live.</p>
+        <p><small>Sources checked on 16 November 2026: the asdf and mise docs linked above, the setup-node and setup-python docs and <code>src/util.ts</code> / <code>src/utils.ts</code> at their current releases, the setup-node v7.1.0 release notes, and the Dockerfile reference. The command output above came from running RuntimeGate 0.2.1 on a local test repo. The Docker build-arg pattern was not run.</small></p>
+      </section>
+      <section class="cta-box" aria-label="RuntimeGate">
+        <h2>Want the check in CI?</h2>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite GitHub Action</a> checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python and Go, with a JSON report and an optional end-of-support check, locally or in any CI. Checkout is not live.</p>
+        <p><strong>$19 one-time</strong> &middot; Node 18+ &middot; zero runtime dependencies &middot; MIT source included. Checkout is not live.</p>
+        <p><a class="cta-link" href="../index.html#pricing">See RuntimeGate &rarr;</a></p>
+      </section>
+      <section>
+        <h2>Related guides</h2>
+        <ul>
+          <li><a href="nvmrc-dockerfile-ci-node-version-drift.html">Do your .nvmrc, Dockerfile, and CI agree on Node.js?</a></li>
+          <li><a href="github-actions-node-version-file.html">Use a version file in GitHub Actions so CI cannot drift</a></li>
+          <li><a href="python-version-vs-pyproject-requires-python.html">Keep .python-version and requires-python in agreement</a></li>
+        </ul>
+      </section>
+
+    </main>
+    <footer>
+      <nav class="family-nav" aria-label="Other tools in this family">
+        <span class="family-label">Also:</span>
+          <a href="https://ess2292.github.io/envgate/">EnvGate</a>
+          <a href="https://ess2292.github.io/runtimegate/" aria-current="page">RuntimeGate</a>
+          <a href="https://ess2292.github.io/lockgate/">LockGate</a>
+          <a href="https://ess2292.github.io/servicegate/">ServiceGate</a>
+      </nav>
+<div class="footer-row">
+        <div>RuntimeGate 0.2.1 by Emilio Straubel · pre-launch pages, not indexed</div>
+        <div class="footer-links">
+          <a href="../index.html">Home</a>
+          <a href="index.html" aria-current="page">Guides</a>
+          <a href="../privacy.html">Privacy</a>
+          <a href="../terms.html">Terms</a>
+          <a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a>
+          <a href="https://github.com/ESS2292/runtimegate-action/issues">Issues</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

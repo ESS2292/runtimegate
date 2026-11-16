@@ -24,7 +24,7 @@
   <meta name="twitter:description" content="Practical guides on keeping runtime versions in agreement across version files, package manifests, Dockerfiles, and GitHub Actions, including .nvmrc vs engines, .python-version vs requires-python, and go.mod vs setup-go." />
   <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
   <meta name="twitter:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Runtime version drift guides", "description": "Practical guides on keeping runtime versions in agreement across version files, package manifests, Dockerfiles, and GitHub Actions, including .nvmrc vs engines, .python-version vs requires-python, and go.mod vs setup-go.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-10", "dateModified": "2026-11-10", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.png"}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Runtime version drift guides", "description": "Practical guides on keeping runtime versions in agreement across version files, package manifests, Dockerfiles, and GitHub Actions, including .nvmrc vs engines, .python-version vs requires-python, and go.mod vs setup-go.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-10", "dateModified": "2026-11-16", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.png"}</script>
   <meta name="theme-color" content="#0b1220" />
   <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
@@ -52,12 +52,16 @@
     <main id="main" class="article">
       <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
       <section>
-        <div class="eyebrow">Guides &middot; Updated November 10, 2026</div>
+        <div class="eyebrow">Guides &middot; Updated November 16, 2026</div>
         <h1>Runtime version drift guides</h1>
         <p class="lead">How to keep Node.js, Python, and Go on the same version in development, CI, and Docker.</p>
-        <p>These guides are public but pre-launch, and should not be indexed. Facts about official end-of-support dates and the cited issues, docs, and incidents were checked on 10 November 2026.</p>
+        <p>These guides are public but pre-launch, and should not be indexed. Facts about official end-of-support dates and the cited issues, docs, and incidents were checked on 10 November 2026; the .tool-versions and mise.toml guide was checked on 16 November 2026.</p>
       </section>
       <div class="guide-list">
+        <article class="guide-card">
+          <h2><a href="tool-versions-mise-toml-vs-nvmrc-setup-node.html">When .tool-versions or mise.toml disagree with .nvmrc, setup-node, and Docker</a></h2>
+          <p>What asdf, mise, setup-node, setup-python, and Docker each actually read, why a stale .nvmrc goes unnoticed under mise, and how to make one file the source of truth.</p>
+        </article>
         <article class="guide-card">
           <h2><a href="package-json-engines-vs-nvmrc-setup-node.html">When package.json engines, .nvmrc, and setup-node disagree</a></h2>
           <p>Why package.json engines, .nvmrc, and a hardcoded setup-node version drift apart, how Yarn and npm treat engines, and how to keep one pin that satisfies the range.</p>
