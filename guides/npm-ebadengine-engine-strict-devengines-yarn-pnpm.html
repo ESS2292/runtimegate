@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>npm WARN EBADENGINE vs “The engine &quot;node&quot; is incompatible”: how npm, Yarn, and pnpm enforce engines — RuntimeGate Guides</title>
+  <meta name="description" content="Tested output from npm 11 and 10, Yarn 1 and 4, and pnpm 12: when package.json engines and devEngines warn, fail, or are ignored, how engine-strict and engineStrict really work, and how to stop the error by pinning Node consistently." />
+  <meta name="author" content="Emilio Straubel" />
+  <meta name="robots" content="noindex" />
+  <meta property="og:title" content="npm WARN EBADENGINE vs “The engine &quot;node&quot; is incompatible”: how npm, Yarn, and pnpm enforce engines — RuntimeGate Guides" />
+  <meta property="og:description" content="Tested output from npm 11 and 10, Yarn 1 and 4, and pnpm 12: when package.json engines and devEngines warn, fail, or are ignored, how engine-strict and engineStrict really work, and how to stop the error by pinning Node consistently." />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="RuntimeGate" />
+  <meta property="og:url" content="https://ess2292.github.io/runtimegate/guides/npm-ebadengine-engine-strict-devengines-yarn-pnpm.html" />
+  <link rel="canonical" href="https://ess2292.github.io/runtimegate/guides/npm-ebadengine-engine-strict-devengines-yarn-pnpm.html" />
+  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
+  <meta property="article:published_time" content="2026-11-21" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="npm WARN EBADENGINE vs “The engine &quot;node&quot; is incompatible”: how npm, Yarn, and pnpm enforce engines — RuntimeGate Guides" />
+  <meta name="twitter:description" content="Tested output from npm 11 and 10, Yarn 1 and 4, and pnpm 12: when package.json engines and devEngines warn, fail, or are ignored, how engine-strict and engineStrict really work, and how to stop the error by pinning Node consistently." />
+  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta name="twitter:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "npm WARN EBADENGINE vs “The engine \"node\" is incompatible”: how npm, Yarn, and pnpm enforce engines", "description": "Tested output from npm 11 and 10, Yarn 1 and 4, and pnpm 12: when package.json engines and devEngines warn, fail, or are ignored, how engine-strict and engineStrict really work, and how to stop the error by pinning Node consistently.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-21", "dateModified": "2026-11-21", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/npm-ebadengine-engine-strict-devengines-yarn-pnpm.html", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.png"}</script>
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Primary">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark" aria-hidden="true">rg</span>
+        RuntimeGate
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#checks">What it checks</a></li>
+        <li><a href="../index.html#ci">CI</a></li>
+        <li><a href="../index.html#limits">Limits</a></li>
+        <li><a href="../index.html#pricing">Pricing</a></li>
+        <li><a href="index.html" aria-current="page">Guides</a></li>
+        <li><a href="../index.html#faq">FAQ</a></li>
+        <li><a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a></li>
+      </ul>
+    </nav>
+    <main id="main" class="article">
+      <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
+      <section>
+        <div class="eyebrow">Guide &middot; November 21, 2026</div>
+        <h1>npm WARN EBADENGINE vs “The engine "node" is incompatible”: how npm, Yarn, and pnpm enforce engines</h1>
+        <p class="lead">The same <code>package.json</code> can print a warning under npm, fail under Yarn 1, pass silently under Yarn 4, and fail under pnpm only when one setting is in the right file. Whether a wrong Node.js version stops your CI job depends on the package manager, its version, and the field you used.</p>
+        <p>Every result below was produced on 21 November 2026 by running the package managers against small test projects on Node.js 24.22.1: npm 11.21.1, npm 10.9.0, npm 10.8.2, Yarn 1.22.22, Yarn 4.12.0, and pnpm 12.21.0. The output is quoted as printed. After that comes what actually prevents the error: making the repo’s own version pins agree before anything installs.</p>
+      </section>
+      <section>
+        <h2>The test projects</h2>
+        <p>Two fixtures cover the common cases. In the first, the app’s own <code>engines</code> range excludes the running Node version, and it depends on a local package, <code>old-dep</code>, whose <code>engines</code> also excludes it:</p>
+        <pre><code>// app/package.json
+{
+  "name": "app",
+  "private": true,
+  "engines": { "node": "22" },
+  "dependencies": { "old-dep": "file:../dep/old-dep-1.0.0.tgz" }
+}
+
+// dep/package.json (packed with npm pack)
+{ "name": "old-dep", "version": "1.0.0", "engines": { "node": "&gt;=18 &lt;23" } }</code></pre>
+        <p>The second uses npm’s newer <code>devEngines</code> field instead of <code>engines</code>:</p>
+        <pre><code>{
+  "name": "app",
+  "private": true,
+  "scripts": { "build": "node -e \"console.log('built')\"" },
+  "devEngines": {
+    "runtime": { "name": "node", "version": "^22.12.0", "onFail": "error" }
+  }
+}</code></pre>
+      </section>
+      <section>
+        <h2>npm: EBADENGINE is a warning unless you turn on engine-strict</h2>
+        <p>With default settings, <code>npm install</code> warned about both the project and the dependency, installed anyway, and exited <code>0</code>:</p>
+        <pre><code>$ npm install
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'app@1.0.0',
+npm warn EBADENGINE   required: { node: '22' },
+npm warn EBADENGINE   current: { node: 'v24.22.1', npm: '11.21.1' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'old-dep@1.0.0',
+npm warn EBADENGINE   required: { node: '&gt;=18 &lt;23' },
+npm warn EBADENGINE   current: { node: 'v24.22.1', npm: '11.21.1' }
+npm warn EBADENGINE }
+
+added 1 package in 266ms</code></pre>
+        <p>npm’s <a href="https://docs.npmjs.com/cli/v11/configuring-npm/package-json#engines"><code>engines</code> documentation</a> says the field is “advisory only” unless the <a href="https://docs.npmjs.com/cli/v11/using-npm/config#engine-strict"><code>engine-strict</code></a> config is set, and that it “will only produce warnings when your package is installed as a dependency.” In this test npm 11 also warned about the root project’s own range, so do not read that sentence as “your own <code>engines</code> is never checked.”</p>
+        <p>With <code>--engine-strict</code>, or <code>engine-strict=true</code> in the project’s <code>.npmrc</code>, the same install failed with exit code <code>1</code>. npm stops at the first package that does not match. Here that was the app itself; when the app’s own range was changed to <code>&gt;=24</code>, it stopped at <code>old-dep</code> instead:</p>
+        <pre><code>$ npm install --engine-strict
+npm error code EBADENGINE
+npm error engine Unsupported engine
+npm error engine Not compatible with your version of node/npm: app@1.0.0
+npm error notsup Not compatible with your version of node/npm: app@1.0.0
+npm error notsup Required: {"node":"22"}
+npm error notsup Actual:   {"node":"v24.22.1","npm":"11.21.1"}</code></pre>
+      </section>
+      <section>
+        <h2>npm devEngines: a hard stop, but only on newer npm</h2>
+        <p>npm documents <a href="https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines"><code>devEngines</code></a> as a check that runs before <code>install</code>, <code>ci</code>, and <code>run</code>, aimed at people working on the source tree rather than at consumers of a published package. <code>onFail</code> can be <code>warn</code>, <code>error</code>, or <code>ignore</code>, and an unset value behaves like <code>error</code>. With npm 11.21.1, <code>npm install</code>, <code>npm ci</code>, and <code>npm run build</code> all failed with exit code <code>1</code>, without needing <code>engine-strict</code>:</p>
+        <pre><code>$ npm run build
+npm error code EBADDEVENGINES
+npm error EBADDEVENGINES The developer of this package has specified the following through devEngines
+npm error EBADDEVENGINES Invalid devEngines.runtime
+npm error EBADDEVENGINES Invalid semver version "^22.12.0" does not match "v24.22.1" for "runtime"
+npm error EBADDEVENGINES {
+npm error EBADDEVENGINES   current: { name: 'node', version: 'v24.22.1' },
+npm error EBADDEVENGINES   required: { name: 'node', version: '^22.12.0', onFail: 'error' }
+npm error EBADDEVENGINES }</code></pre>
+        <p>With <code>"onFail": "warn"</code>, the same lines were printed as <code>npm warn</code> and the script ran.</p>
+        <p>The catch is the npm version. npm 10.9.0 failed the install too (its message read <code>Invalid engine "runtime"</code>). npm 10.8.2 ignored <code>devEngines</code> entirely and printed <code>up to date</code> with exit <code>0</code>. According to the <a href="https://nodejs.org/dist/index.json">Node.js release index</a>, 10.8.2 is the npm that ships with Node.js 20.20.2, the newest Node 20 release. So if CI is accidentally on Node 20, the field meant to catch the wrong runtime may not run at all. <code>engine-strict</code> still worked on npm 10.8.2: the strict install of the first fixture failed with <code>EBADENGINE</code>.</p>
+      </section>
+      <section>
+        <h2>Yarn 1: the “engine is incompatible” error</h2>
+        <p>Yarn Classic fails the install by default. This is the message developers search for:</p>
+        <pre><code>$ yarn install
+[1/5] Validating package.json...
+[2/5] Resolving packages...
+[3/5] Fetching packages...
+error old-dep@1.0.0: The engine "node" is incompatible with this module. Expected version "&gt;=18 &lt;23". Got "24.22.1"
+error Found incompatible module.</code></pre>
+        <p>The app’s own <code>engines</code> fails it even earlier, at <code>[1/5] Validating package.json...</code> with <code>error app@1.0.0: The engine "node" is incompatible with this module. Expected version "22". Got "24.22.1"</code>. Both exited <code>1</code>. <code>yarn install --ignore-engines</code> (<a href="https://classic.yarnpkg.com/en/docs/cli/install">Yarn Classic docs</a>) completed and exited <code>0</code>. That flag hides the message; it does not make Node 24 a version the dependency supports. Yarn 1.22.22 ignored <code>devEngines</code>: install and <code>yarn run build</code> both succeeded.</p>
+      </section>
+      <section>
+        <h2>Yarn 2+ (Berry): no engines check at all</h2>
+        <p>Yarn 4.12.0 installed both fixtures with exit <code>0</code> and printed no engine warning, for either the project or the dependency. It ignored <code>devEngines</code> as well. This is a known difference from Yarn 1. The check was not carried over to modern Yarn (<a href="https://github.com/yarnpkg/berry/issues/1177">yarnpkg/berry#1177</a>), and maintainers point users to community plugins such as <a href="https://github.com/devoto13/yarn-plugin-engines">yarn-plugin-engines</a> (not tested here). If a repo moved from Yarn 1 to Yarn 4, its <code>engines</code> field may have quietly stopped protecting anything.</p>
+      </section>
+      <section>
+        <h2>pnpm: engineStrict belongs in pnpm-workspace.yaml</h2>
+        <p>By default pnpm 12.21.0 warned and installed, exit <code>0</code>:</p>
+        <pre><code>$ pnpm install
+[WARN] Unsupported engine for /tmp/eng/pn: wanted: {"node":"22"} (current: {"node":"24.22.1"})
+[WARN] Unsupported engine for old-dep@file:old-dep-1.0.0.tgz: wanted: {"node":"&gt;=18 &lt;23"} (current: {"node":"24.22.1"})</code></pre>
+        <p>Putting <code>engine-strict=true</code> in <code>.npmrc</code> changed nothing. pnpm’s <a href="https://pnpm.io/settings">settings page</a> says that only auth, registry, TLS, proxy, and <code>local-address</code> settings are read from <code>.npmrc</code>; everything else goes in <code>pnpm-workspace.yaml</code>. With <code>engineStrict: true</code> there, or with <code>--config.engine-strict=true</code> on the command line, the install failed with exit <code>1</code>:</p>
+        <pre><code>$ cat pnpm-workspace.yaml
+engineStrict: true
+$ pnpm install
+Error: ERR_PNPM_UNSUPPORTED_ENGINE
+
+  × Unsupported engine for /tmp/eng/pn: wanted: {"node":"22"} (current:
+  │ {"node":"24.22.1"})</code></pre>
+        <p>The <a href="https://pnpm.io/settings/cli#enginestrict">engineStrict docs</a> add that optional dependencies are exempt. They also describe <code>nodeVersion</code>, which makes pnpm check <code>engines</code> against a fixed Node version instead of the one running. pnpm also acts on <code>devEngines.runtime</code>: with <code>"onFail": "error"</code>, both <code>pnpm install</code> and <code>pnpm run build</code> exited <code>1</code> with <code>ERR_PNPM_BAD_RUNTIME_VERSION</code>, “This project requires Node.js ^22.12.0. Your current Node.js is v24.22.1”. pnpm’s <code>runtimeOnFail</code> setting can override that, and its <code>download</code> mode installs the declared runtime instead of failing.</p>
+      </section>
+      <section>
+        <h2>Summary of what each tool did</h2>
+        <ul>
+          <li><strong>npm 11.21.1, default:</strong> <code>engines</code> mismatch (project or dependency) warns <code>EBADENGINE</code>, exit 0. <code>devEngines.runtime</code> with <code>onFail: error</code> fails install, ci, and run.</li>
+          <li><strong>npm with <code>engine-strict</code>:</strong> <code>engines</code> mismatch fails with <code>EBADENGINE</code>, exit 1 (also on npm 10.8.2).</li>
+          <li><strong>npm 10.8.2 (bundled with Node 20.20.2):</strong> <code>devEngines</code> ignored.</li>
+          <li><strong>Yarn 1.22.22:</strong> <code>engines</code> mismatch fails by default; <code>--ignore-engines</code> bypasses it. <code>devEngines</code> ignored.</li>
+          <li><strong>Yarn 4.12.0:</strong> no check for <code>engines</code> or <code>devEngines</code>.</li>
+          <li><strong>pnpm 12.21.0:</strong> <code>engines</code> mismatch warns; fails with <code>engineStrict: true</code> in <code>pnpm-workspace.yaml</code> (not <code>.npmrc</code>). <code>devEngines.runtime</code> with <code>onFail: error</code> fails install and run.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Why the error usually shows up in CI or Docker</h2>
+        <p>These checks compare a range with whatever Node happens to be running. They do not ask why it is running. On a laptop that is the version manager’s choice. In CI it is the <code>actions/setup-node</code> input, and in a container it is the <code>FROM</code> tag. When those three are written in different files, they drift. Here is a small repo where the range says 22, CI hardcodes 20, and the Dockerfile moved to 24:</p>
+        <pre><code># package.json
+"engines": { "node": "^22.12.0" },
+"devEngines": {
+  "runtime": { "name": "node", "version": "^22.12.0", "onFail": "error" }
+}
+
+# .nvmrc
+22
+
+# Dockerfile
+FROM node:24-slim
+RUN npm ci
+
+# .github/workflows/ci.yml (steps)
+- uses: actions/checkout@v7
+- uses: actions/setup-node@v7
+  with:
+    node-version: 20
+- run: npm ci</code></pre>
+        <p>The container build’s <code>npm ci</code> runs on Node 24, which fails the <code>devEngines</code> check, as the npm 11 output above shows. The CI job runs on Node 20, whose bundled npm 10.8.2 skips <code>devEngines</code>, and <code>engines</code> only warns. So CI can go green on a version the project says it does not support. The install-time checks are the last line of defense, and here they are inconsistent.</p>
+        <p>Running the RuntimeGate CLI (0.2.1) on that repo, without installing anything, printed this and exited <code>1</code>:</p>
+        <pre><code>$ runtimegate check .
+RuntimeGate checked 5 declarations (node, python, go, rust).
+
+Errors (7):
+  [major-mismatch] Node.js pins disagree on the major version (20 vs 22 vs 24).
+  [range-unsatisfied] actions/setup-node#node-version in .github/workflows/ci.yml (20) cannot satisfy package.json#engines.node "^22.12.0" in package.json.
+  [range-unsatisfied] .nvmrc in .nvmrc (22) cannot satisfy package.json#engines.node "^22.12.0" in package.json.
+  [range-unsatisfied] Dockerfile#FROM in Dockerfile (24) cannot satisfy package.json#engines.node "^22.12.0" in package.json.
+  [range-unsatisfied] actions/setup-node#node-version in .github/workflows/ci.yml (20) cannot satisfy package.json#devEngines.runtime "^22.12.0" in package.json.
+  [range-unsatisfied] .nvmrc in .nvmrc (22) cannot satisfy package.json#devEngines.runtime "^22.12.0" in package.json.
+  [range-unsatisfied] Dockerfile#FROM in Dockerfile (24) cannot satisfy package.json#devEngines.runtime "^22.12.0" in package.json.
+
+Warnings (1):
+  [hardcoded-ci] Node.js CI hardcodes a version (actions/setup-node#node-version@.github/workflows/ci.yml:20) while a version file is present or referenced. Prefer node-version-file / python-version-file / go-version-file so CI cannot drift.</code></pre>
+        <p>One of those errors is strict on purpose. A version manager given <code>22</code> in <code>.nvmrc</code> will install some 22.x release, which may well satisfy <code>^22.12.0</code>. RuntimeGate can’t know which one, so it treats a major-only <code>.nvmrc</code> as 22.0.0 when checking ranges. It treats a major-only <code>setup-node</code> value as the latest release on that line, because setup-node resolves it that way. The fix is the same either way: pin a version that is inside the range.</p>
+      </section>
+      <section>
+        <h2>The fix: one pin inside the range, read everywhere</h2>
+        <p>Pick a version that satisfies the range, put it in one file, and point CI at that file. Pin the Docker tag to the same version. <code>actions/setup-node</code> documents <code>node-version-file</code> for <code>.nvmrc</code>, <code>.node-version</code>, <code>.tool-versions</code>, <code>mise.toml</code>, and <code>package.json</code>. If both <code>node-version</code> and <code>node-version-file</code> are set, <code>node-version</code> wins (<a href="https://github.com/actions/setup-node/blob/main/docs/advanced-usage.md#node-version-file">setup-node advanced usage</a>). 22.23.5 was the newest Node 22 release in the Node.js release index on 21 November 2026, and <code>node:22.23.5-slim</code> exists on Docker Hub:</p>
+        <pre><code># .nvmrc
+22.23.5
+
+# Dockerfile
+FROM node:22.23.5-slim
+RUN npm ci
+
+# .github/workflows/ci.yml (steps)
+- uses: actions/checkout@v7
+- uses: actions/setup-node@v7
+  with:
+    node-version-file: .nvmrc
+- run: npm ci</code></pre>
+        <p>With those three changes, the same check printed this and exited <code>0</code>:</p>
+        <pre><code>$ runtimegate check .
+RuntimeGate checked 5 declarations (node, python, go, rust).
+OK — declared runtimes agree.</code></pre>
+        <p>Then decide how loud the install-time check should be, based on the package manager you actually use:</p>
+        <ul>
+          <li><strong>npm:</strong> add <code>engine-strict=true</code> to the project <code>.npmrc</code> if a mismatched <code>engines</code> should fail installs, including your dependencies’ ranges. Use <code>devEngines.runtime</code> for the contributor check, but don’t rely on it where npm older than 10.9 may run.</li>
+          <li><strong>Yarn 1:</strong> it already fails. Don’t make <code>--ignore-engines</code> a habit in CI scripts.</li>
+          <li><strong>Yarn 4:</strong> nothing checks <code>engines</code> unless you add a plugin, so the pins themselves have to be right.</li>
+          <li><strong>pnpm:</strong> set <code>engineStrict: true</code> in <code>pnpm-workspace.yaml</code>, not <code>.npmrc</code>.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>What RuntimeGate checks here, and what it doesn’t</h2>
+        <ul>
+          <li>It reads the repo’s own <code>package.json</code> <code>engines.node</code>, <code>devEngines.runtime</code> (the <code>node</code> entry), and Volta, and checks every Node pin it finds against those ranges: <code>.nvmrc</code>, <code>.node-version</code>, <code>.tool-versions</code>, <code>mise.toml</code>, Dockerfile and Compose images, dev containers, and <code>actions/setup-node</code>.</li>
+          <li>It does <strong>not</strong> read dependencies’ <code>engines</code>. It skips <code>node_modules</code>, and it does not read lockfiles. In the demo repo, a <code>node_modules/old-dep</code> with <code>"node": "&gt;=18 &lt;21"</code> was present and was not reported. A dependency that drops support for your Node version is still something npm, Yarn 1, or pnpm reports at install time.</li>
+          <li>It does not check <code>engines.npm</code>, <code>engines.pnpm</code>, <code>packageManager</code>, or <code>devEngines.packageManager</code>. It does not run a package manager, and it does not check which Node is installed on the machine. It compares declarations in files.</li>
+          <li>By default, an <code>engines</code> range is compared only to pins in its own package directory, plus root workflows (<code>--engines-scope all</code> compares everything). Node pins are compared by major version, and patch-level differences are warnings.</li>
+        </ul>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite Action</a> checks Node.js pins only. The full CLI also checks Python and Go. Checkout is not live.</p>
+        <p><small>Sources checked on 21 November 2026: npm’s package.json and config docs (v11), pnpm’s settings and CLI settings docs, the Yarn Classic install docs, yarnpkg/berry issue #1177, the setup-node advanced usage docs, the Node.js release index, and Docker Hub’s node tags. All command output above came from running npm 11.21.1, 10.9.0, and 10.8.2, Yarn 1.22.22 and 4.12.0, pnpm 12.21.0, and RuntimeGate 0.2.1 on Node.js 24.22.1 against local test projects. The Docker build and the GitHub Actions workflow were not run. Their behavior above is inferred from the npm runs on the same Node and npm versions.</small></p>
+      </section>
+      <section class="cta-box" aria-label="RuntimeGate">
+        <h2>Want the check in CI?</h2>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite GitHub Action</a> checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python and Go, with a JSON report and an optional end-of-support check, locally or in any CI. Checkout is not live.</p>
+        <p><strong>$19 one-time</strong> &middot; Node 18+ &middot; zero runtime dependencies &middot; MIT source included. Checkout is not live.</p>
+        <p><a class="cta-link" href="../index.html#pricing">See RuntimeGate &rarr;</a></p>
+      </section>
+      <section>
+        <h2>Related guides</h2>
+        <ul>
+          <li><a href="package-json-engines-vs-nvmrc-setup-node.html">When package.json engines, .nvmrc, and setup-node disagree</a></li>
+          <li><a href="github-actions-node-version-file.html">Use a version file in GitHub Actions so CI cannot drift</a></li>
+          <li><a href="nvmrc-dockerfile-ci-node-version-drift.html">Do your .nvmrc, Dockerfile, and CI agree on Node.js?</a></li>
+        </ul>
+      </section>
+
+    </main>
+    <footer>
+      <nav class="family-nav" aria-label="Other tools in this family">
+        <span class="family-label">Also:</span>
+          <a href="https://ess2292.github.io/envgate/">EnvGate</a>
+          <a href="https://ess2292.github.io/runtimegate/" aria-current="page">RuntimeGate</a>
+          <a href="https://ess2292.github.io/lockgate/">LockGate</a>
+          <a href="https://ess2292.github.io/servicegate/">ServiceGate</a>
+      </nav>
+<div class="footer-row">
+        <div>RuntimeGate 0.2.1 by Emilio Straubel · pre-launch pages, not indexed</div>
+        <div class="footer-links">
+          <a href="../index.html">Home</a>
+          <a href="index.html" aria-current="page">Guides</a>
+          <a href="../privacy.html">Privacy</a>
+          <a href="../terms.html">Terms</a>
+          <a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a>
+          <a href="https://github.com/ESS2292/runtimegate-action/issues">Issues</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
