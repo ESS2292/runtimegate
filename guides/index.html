@@ -24,7 +24,7 @@
   <meta name="twitter:description" content="Practical guides on keeping runtime versions in agreement across version files, package manifests, Dockerfiles, and GitHub Actions, including .nvmrc vs engines, .python-version vs requires-python, and go.mod vs setup-go." />
   <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
   <meta name="twitter:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Runtime version drift guides", "description": "Practical guides on keeping runtime versions in agreement across version files, package manifests, Dockerfiles, and GitHub Actions, including .nvmrc vs engines, .python-version vs requires-python, and go.mod vs setup-go.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-10", "dateModified": "2026-11-21", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.png"}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Runtime version drift guides", "description": "Practical guides on keeping runtime versions in agreement across version files, package manifests, Dockerfiles, and GitHub Actions, including .nvmrc vs engines, .python-version vs requires-python, and go.mod vs setup-go.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-10", "dateModified": "2026-11-23", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.png"}</script>
   <meta name="theme-color" content="#0b1220" />
   <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
@@ -52,12 +52,16 @@
     <main id="main" class="article">
       <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
       <section>
-        <div class="eyebrow">Guides &middot; Updated November 21, 2026</div>
+        <div class="eyebrow">Guides &middot; Updated November 23, 2026</div>
         <h1>Runtime version drift guides</h1>
         <p class="lead">How to keep Node.js, Python, and Go on the same version in development, CI, and Docker.</p>
-        <p>These guides are public but pre-launch, and should not be indexed. Facts about official end-of-support dates and the cited issues, docs, and incidents were checked on 10 November 2026; the .tool-versions and mise.toml guide was checked on 16 November 2026; the EBADENGINE and engine-strict guide was checked on 21 November 2026.</p>
+        <p>These guides are public but pre-launch, and should not be indexed. Facts about official end-of-support dates and the cited issues, docs, and incidents were checked on 10 November 2026; the .tool-versions and mise.toml guide was checked on 16 November 2026; the EBADENGINE and engine-strict guide was checked on 21 November 2026; the setup-python “version not found” guide was checked on 23 November 2026.</p>
       </section>
       <div class="guide-list">
+        <article class="guide-card">
+          <h2><a href="setup-python-version-not-found-local-cache.html">setup-python: “Version 3.x was not found in the local cache” and “The version … was not found for Ubuntu”</a></h2>
+          <p>Reproduced with setup-python v7.1.0: why the local-cache line is only info, and the five real causes of the failure, from unquoted 3.10 becoming 3.1 to runner-image builds, patch pins, pre-releases, and x86.</p>
+        </article>
         <article class="guide-card">
           <h2><a href="npm-ebadengine-engine-strict-devengines-yarn-pnpm.html">npm WARN EBADENGINE vs “The engine "node" is incompatible”: how npm, Yarn, and pnpm enforce engines</a></h2>
           <p>Tested output from npm, Yarn 1 and 4, and pnpm: when engines and devEngines warn, fail, or are silently ignored, where engine-strict actually has to be set, and how consistent Node pins prevent the error.</p>

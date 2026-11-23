@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>setup-python: “Version 3.x was not found in the local cache” and “The version … was not found for Ubuntu” — RuntimeGate Guides</title>
+  <meta name="description" content="Reproduced with actions/setup-python v7.1.0: why “Version 3.x was not found in the local cache” is only info, and the five real causes of “The version … was not found for Ubuntu 24.04”: unquoted 3.10 parsed as 3.1, runner image builds, patch pins, pre-releases, and x86." />
+  <meta name="author" content="Emilio Straubel" />
+  <meta name="robots" content="noindex" />
+  <meta property="og:title" content="setup-python: “Version 3.x was not found in the local cache” and “The version … was not found for Ubuntu” — RuntimeGate Guides" />
+  <meta property="og:description" content="Reproduced with actions/setup-python v7.1.0: why “Version 3.x was not found in the local cache” is only info, and the five real causes of “The version … was not found for Ubuntu 24.04”: unquoted 3.10 parsed as 3.1, runner image builds, patch pins, pre-releases, and x86." />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="RuntimeGate" />
+  <meta property="og:url" content="https://ess2292.github.io/runtimegate/guides/setup-python-version-not-found-local-cache.html" />
+  <link rel="canonical" href="https://ess2292.github.io/runtimegate/guides/setup-python-version-not-found-local-cache.html" />
+  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
+  <meta property="article:published_time" content="2026-11-23" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="setup-python: “Version 3.x was not found in the local cache” and “The version … was not found for Ubuntu” — RuntimeGate Guides" />
+  <meta name="twitter:description" content="Reproduced with actions/setup-python v7.1.0: why “Version 3.x was not found in the local cache” is only info, and the five real causes of “The version … was not found for Ubuntu 24.04”: unquoted 3.10 parsed as 3.1, runner image builds, patch pins, pre-releases, and x86." />
+  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta name="twitter:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "setup-python: “Version 3.x was not found in the local cache” and “The version … was not found for Ubuntu”", "description": "Reproduced with actions/setup-python v7.1.0: why “Version 3.x was not found in the local cache” is only info, and the five real causes of “The version … was not found for Ubuntu 24.04”: unquoted 3.10 parsed as 3.1, runner image builds, patch pins, pre-releases, and x86.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-23", "dateModified": "2026-11-23", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/setup-python-version-not-found-local-cache.html", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.png"}</script>
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Primary">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark" aria-hidden="true">rg</span>
+        RuntimeGate
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#checks">What it checks</a></li>
+        <li><a href="../index.html#ci">CI</a></li>
+        <li><a href="../index.html#limits">Limits</a></li>
+        <li><a href="../index.html#pricing">Pricing</a></li>
+        <li><a href="index.html" aria-current="page">Guides</a></li>
+        <li><a href="../index.html#faq">FAQ</a></li>
+        <li><a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a></li>
+      </ul>
+    </nav>
+    <main id="main" class="article">
+      <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
+      <section>
+        <div class="eyebrow">Guide &middot; November 23, 2026</div>
+        <h1>setup-python: “Version 3.x was not found in the local cache” and “The version … was not found for Ubuntu”</h1>
+        <p class="lead">The “local cache” line is not the error. It is an info message <code>actions/setup-python</code> prints every time a version isn’t preinstalled on the runner. The step fails on the next line, when the version also isn’t in the download manifest for that OS and architecture. Here are five causes, each reproduced, and how to fix each one.</p>
+        <p>Every log below came from running <code>actions/setup-python</code> <strong>v7.1.0</strong> (commit <code>6d4fd22</code>), using its own <code>dist/setup/index.js</code>, on 23 November 2026. It ran on Node.js 24.22.1 against the live manifest in <code>actions/python-versions</code> (main at <code>9bc1fe8</code>). The test machine runs Debian 13, and the action chooses builds by Ubuntu release. So for each run, the OS identity was set to Ubuntu 22.04, 24.04, or 26.04 by bind-mounting an <code>os-release</code> file and adding a stand-in <code>lsb_release</code>. Nothing else was changed. These were not GitHub-hosted runner runs, and <code>::debug::</code> lines have been removed from the output.</p>
+      </section>
+      <section>
+        <h2>What the two messages mean</h2>
+        <p>In <code>src/find-python.ts</code>, the action first calls <code>tc.find('Python', spec, arch)</code> on the runner’s tool cache. If nothing matches, it logs <code>Version … was not found in the local cache</code> and looks the version up in <code>versions-manifest.json</code>. If the manifest has a build for this OS version and architecture, it downloads it, prints <code>is available for downloading</code>, and the step succeeds. If not, it throws:</p>
+        <pre><code>Version 3.1 was not found in the local cache
+::error::The version '3.1' with architecture 'x64' was not found for Ubuntu 24.04.%0AThe list of all available versions can be found here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json</code></pre>
+        <p>(<code>%0A</code> is a newline in a workflow command. The Actions log shows the error as two lines.) So when you see the first line in a passing job, it is harmless. When the job fails, read the version string inside the quotes in the error. It is often not the version you think you asked for.</p>
+      </section>
+      <section>
+        <h2>Cause 1: unquoted <code>3.10</code> in YAML becomes <code>3.1</code></h2>
+        <p>That <code>'3.1'</code> above came from this workflow:</p>
+        <pre><code>- uses: actions/setup-python@v7
+  with:
+    python-version: 3.10</code></pre>
+        <p>In YAML, unquoted <code>3.10</code> is a number, and the number 3.10 is the same as 3.1. To check how GitHub’s own parser handles it, I parsed the workflow with <code>@actions/workflow-parser</code> 0.3.62 (from <code>actions/languageservices</code>, the parser behind GitHub’s Actions language tooling). This matrix and step are the input:</p>
+        <pre><code>strategy:
+  matrix:
+    python-version: [3.9, 3.10, "3.10", 3.11]
+steps:
+  - uses: actions/setup-python@v7
+    with:
+      python-version: 3.10</code></pre>
+        <p>The parser returned these tokens:</p>
+        <pre><code>.jobs.test.strategy.matrix.python-version[0] _NumberToken value= 3.9 toString()= "3.9"
+.jobs.test.strategy.matrix.python-version[1] _NumberToken value= 3.1 toString()= "3.1"
+.jobs.test.strategy.matrix.python-version[2] _StringToken value= "3.10" toString()= "3.10"
+.jobs.test.strategy.matrix.python-version[3] _NumberToken value= 3.11 toString()= "3.11"
+.jobs.test.steps[0].with.python-version _StringToken value= "3.1" toString()= "3.1"</code></pre>
+        <p>The <code>with:</code> value reaches the action as the string <code>"3.1"</code>. The generic <code>yaml</code> 2.9.1 package gives the same result (<code>{"python-version":3.1}</code>). The manifest does have a <code>3.1.4</code> entry, but it has only Windows files, so on Linux the step fails. A version that isn’t a valid number, such as <code>3.10.0</code>, stays a string. The same thing happens to any minor version ending in zero (<code>3.20</code> parses as <code>3.2</code>).</p>
+        <p><strong>Fix:</strong> quote every version in workflows, including matrix entries: <code>python-version: "3.10"</code>. Or better, use <code>python-version-file: .python-version</code>, so the version comes from a plain-text file and YAML never parses it.</p>
+      </section>
+      <section>
+        <h2>Cause 2: the version isn’t built for this runner image</h2>
+        <p>setup-python downloads prebuilt CPython from <code>actions/python-versions</code>, and each build is tied to one Ubuntu release. I counted stable minor versions with a Linux build in the manifest on 23 November 2026:</p>
+        <table class="compare">
+          <thead><tr><th>Ubuntu</th><th>x64</th><th>arm64</th></tr></thead>
+          <tbody>
+            <tr><td>22.04</td><td>3.7 – 3.15</td><td>3.8 – 3.15</td></tr>
+            <tr><td>24.04</td><td>3.8 – 3.15</td><td>3.8 – 3.15</td></tr>
+            <tr><td>26.04</td><td>3.10 – 3.15</td><td>3.10 – 3.15</td></tr>
+          </tbody>
+        </table>
+        <p>With <code>python-version: '3.7'</code> and Ubuntu 24.04:</p>
+        <pre><code>Version 3.7 was not found in the local cache
+::error::The version '3.7' with architecture 'x64' was not found for Ubuntu 24.04.%0AThe list of all available versions can be found here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json</code></pre>
+        <p>The same input with Ubuntu 22.04:</p>
+        <pre><code>Version 3.7 was not found in the local cache
+Version 3.7 is available for downloading
+Download from "https://github.com/actions/python-versions/releases/download/3.7.17-5356448435/python-3.7.17-linux-22.04-x64.tar.gz"
+...
+Successfully set up CPython (3.7.17)</code></pre>
+        <p>And <code>python-version: '3.9'</code> with Ubuntu 26.04:</p>
+        <pre><code>::error::The version '3.9' with architecture 'x64' was not found for Ubuntu 26.04.%0AThe list of all available versions can be found here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json</code></pre>
+        <p>This matters because of <code>ubuntu-latest</code>. On 23 November 2026, the <code>actions/runner-images</code> README (main at <code>6d72cf2</code>) maps <code>ubuntu-latest</code> to Ubuntu 24.04 and lists <code>ubuntu-26.04</code> as a separate label. The README also says <code>-latest</code> labels “point towards the newest stable OS version available” and that migration “happens over 1-2 months.” Based on the manifest above, a job that pins 3.8 or 3.9 on <code>ubuntu-latest</code> will hit this error once that label moves to 26.04. I haven’t seen it happen. That is an inference from the manifest.</p>
+        <p><strong>Fix:</strong> move to a supported Python (3.7, 3.8, and 3.9 are all past end of support). If you really can’t, pin <code>runs-on</code> to an image that still has a build, and treat that as temporary.</p>
+      </section>
+      <section>
+        <h2>Cause 3: an exact patch pin that the newer image doesn’t have</h2>
+        <p>New images only get builds for patch releases made after they arrived. On 23 November 2026, Ubuntu 26.04 x64 had 3.12.13 – 3.12.16 and 3.13.13 – 3.13.18. Ubuntu 24.04 had 3.12.0 – 3.12.16. A <code>.python-version</code> containing <code>3.12.3</code> works on 24.04, but on 26.04:</p>
+        <pre><code>Resolved .python-version as 3.12.3
+Version 3.12.3 was not found in the local cache
+::error::The version '3.12.3' with architecture 'x64' was not found for Ubuntu 26.04.%0AThe list of all available versions can be found here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json</code></pre>
+        <p>When the file said <code>3.12</code>, the same run resolved to <code>python-3.12.16-linux-26.04-x64.tar.gz</code> and printed <code>Successfully set up CPython (3.12.16)</code>.</p>
+        <p><strong>Fix:</strong> pin major.minor in the file CI reads, unless you really need a specific patch. If you do pin a patch, bump it when you change runner images. Make the Dockerfile tag match either way.</p>
+      </section>
+      <section>
+        <h2>Cause 4: the minor version only has pre-releases so far</h2>
+        <p>On 23 November 2026, the only 3.16 entries in the manifest were <code>3.16.0-alpha.1</code> and <code>3.16.0-alpha.2</code>. With <code>python-version: '3.16'</code>:</p>
+        <pre><code>Version 3.16 was not found in the local cache
+::error::The version '3.16' with architecture 'x64' was not found for Ubuntu 24.04.%0AThe list of all available versions can be found here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json</code></pre>
+        <p>With <code>allow-prereleases: true</code>, the action rewrites <code>3.16</code> to the range <code>~3.16.0-0</code> (see <code>pythonVersionToSemantic</code> in <code>find-python.ts</code>), and the run succeeds:</p>
+        <pre><code>Version ~3.16.0-0 was not found in the local cache
+Version ~3.16.0-0 is available for downloading
+Download from "https://github.com/actions/python-versions/releases/download/3.16.0-alpha.2-42945087804/python-3.16.0-alpha.2-linux-24.04-x64.tar.gz"
+...
+Successfully set up CPython (3.16.0-alpha.2)</code></pre>
+        <p>The <code>action.yml</code> description says the input matches prereleases “if no GA versions are found” and that “only ‘x.y’ version range is supported for CPython.” Use it in a matrix entry for early testing. Don’t use it for your production pin.</p>
+      </section>
+      <section>
+        <h2>Cause 5: <code>architecture: x86</code> on Linux</h2>
+        <p>The manifest’s Linux files are <code>x64</code> and <code>arm64</code>, plus <code>-freethreaded</code> variants of each. <code>x86</code> builds exist only for Windows. With <code>python-version: '3.13'</code> and <code>architecture: x86</code>:</p>
+        <pre><code>::error::The version '3.13' with architecture 'x86' was not found for Ubuntu 24.04.%0AThe list of all available versions can be found here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json</code></pre>
+        <p><strong>Fix:</strong> remove <code>architecture</code> on Linux. It defaults to the runner’s own architecture (<code>os.arch()</code>).</p>
+      </section>
+      <section>
+        <h2>A checklist when the step fails</h2>
+        <ol>
+          <li>Read the version in quotes in the error. If it is <code>3.1</code>, <code>3.2</code>, or anything else you didn’t type, it is YAML. Quote the value.</li>
+          <li>Check <code>runs-on</code>. Find your version and OS release in <code>versions-manifest.json</code>.</li>
+          <li>If you pinned a patch version, try major.minor, or a patch that has a build for that image.</li>
+          <li>For a release that isn’t final yet, add <code>allow-prereleases: true</code>, and only in a test matrix.</li>
+          <li>Remove <code>architecture: x86</code> on Linux.</li>
+          <li>Make CI read the same pin as everything else (<code>python-version-file: .python-version</code>), and keep the Dockerfile tag on the same series.</li>
+        </ol>
+      </section>
+      <section>
+        <h2>What RuntimeGate catches here, and what it doesn’t</h2>
+        <p>RuntimeGate compares the version declarations in your files with each other. It doesn’t talk to the runner or the manifest. I ran the RuntimeGate 0.2.1 CLI on four small test repos.</p>
+        <p><strong>Drift</strong> (<code>.python-version</code> 3.13, <code>FROM python:3.12-slim</code>, <code>requires-python = "&gt;=3.12"</code>, workflow <code>python-version: '3.9'</code>):</p>
+        <pre><code>RuntimeGate checked 4 declarations (node, python, go, rust).
+
+Errors (2):
+  [series-mismatch] Python pins disagree on the major.minor series (3.12 vs 3.13 vs 3.9).
+  [range-unsatisfied] actions/setup-python#python-version in .github/workflows/ci.yml (3.9) cannot satisfy pyproject.toml#requires-python "&gt;=3.12" in pyproject.toml.
+
+Warnings (1):
+  [hardcoded-ci] Python CI hardcodes a version (actions/setup-python#python-version@.github/workflows/ci.yml:3.9) while a version file is present or referenced. Prefer node-version-file / python-version-file / go-version-file so CI cannot drift.
+exit=1</code></pre>
+        <p><strong>Old pin</strong> (everything on 3.7, CI uses <code>python-version-file</code>). A plain <code>check</code> passes because the files agree. With <code>--eol</code>:</p>
+        <pre><code>RuntimeGate checked 3 declarations (node, python, go, rust).
+
+Errors (2):
+  [eol] .python-version in .python-version (3.7) is past end of support (ended 2023-06-27).
+  [eol] Dockerfile#FROM in Dockerfile (3.7) is past end of support (ended 2023-06-27).
+exit=1</code></pre>
+        <p><strong>Clean</strong> (<code>.python-version</code> 3.13.18, <code>FROM python:3.13.18-slim</code>, <code>requires-python = "&gt;=3.13"</code>, <code>python-version-file: .python-version</code>), with and without <code>--eol</code>:</p>
+        <pre><code>RuntimeGate checked 4 declarations (node, python, go, rust).
+OK — declared runtimes agree.
+exit=0</code></pre>
+        <p><strong>Unquoted 3.10</strong> (all files on 3.10, workflow <code>python-version: 3.10</code> without quotes). This is the case that fails in setup-python:</p>
+        <pre><code>RuntimeGate checked 4 declarations (node, python, go, rust).
+
+Warnings (1):
+  [hardcoded-ci] Python CI hardcodes a version (actions/setup-python#python-version@.github/workflows/ci.yml:3.10) while a version file is present or referenced. Prefer node-version-file / python-version-file / go-version-file so CI cannot drift.
+exit=0</code></pre>
+        <p>Here are the gaps, based on those runs:</p>
+        <ul>
+          <li><strong>The YAML 3.10 → 3.1 problem is not detected.</strong> RuntimeGate reads the text <code>3.10</code>, as written, in both <code>with:</code> and a matrix (<code>[3.9, 3.10, 3.11]</code> was read as 3.9, 3.10, 3.11). It only gives the generic <code>hardcoded-ci</code> warning, which doesn’t fail the job. Quoting the value or using <code>python-version-file</code> is the fix.</li>
+          <li><strong>It doesn’t know what each runner image can install.</strong> It doesn’t read <code>runs-on</code> or the python-versions manifest. A 3.12.3 pin that is missing on Ubuntu 26.04 passes. <code>--eol</code> does catch 3.7, 3.8, and 3.9, but only because those versions are past end of support, not because of the runner.</li>
+          <li><strong>Pre-release-only versions pass.</strong> A <code>.python-version</code> of <code>3.16</code> gave no findings, even with <code>--eol</code>.</li>
+          <li>It doesn’t check <code>architecture</code>, <code>allow-prereleases</code>, or <code>check-latest</code>.</li>
+          <li>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite Action</a> (v1, <code>a30a806</code>) checks Node.js only. On these Python repos it printed <code>RuntimeGate checked 0 declarations (node).</code> and <code>No runtime version declarations found.</code> and exited 0.</li>
+        </ul>
+        <p>RuntimeGate prevents the slower kind of failure: CI, the Dockerfile, and <code>.python-version</code> quietly running different Pythons. It is not a substitute for reading the setup-python error. Checkout for the CLI is not live.</p>
+        <p><small>Sources checked on 23 November 2026: actions/setup-python v7.1.0 (<code>6d4fd22</code>) <code>src/find-python.ts</code>, <code>src/install-python.ts</code>, <code>src/utils.ts</code>, <code>action.yml</code>, and README; actions/python-versions <code>versions-manifest.json</code> at <code>9bc1fe8</code>; the actions/runner-images README at <code>6d72cf2</code>; <code>@actions/workflow-parser</code> 0.3.62 and <code>yaml</code> 2.9.1. All setup-python output above came from running the action’s <code>dist/setup/index.js</code> locally on Node.js 24.22.1, with the OS identity set to Ubuntu 22.04, 24.04, or 26.04 on a Debian 13 machine. Python was really downloaded and installed in the successful runs. RuntimeGate output came from the 0.2.1 CLI and the Lite Action v1 source, run locally. No GitHub-hosted runner was used.</small></p>
+      </section>
+      <section class="cta-box" aria-label="RuntimeGate">
+        <h2>Want the check in CI?</h2>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite GitHub Action</a> checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python and Go, with a JSON report and an optional end-of-support check, locally or in any CI. Checkout is not live.</p>
+        <p><strong>$19 one-time</strong> &middot; Node 18+ &middot; zero runtime dependencies &middot; MIT source included. Checkout is not live.</p>
+        <p><a class="cta-link" href="../index.html#pricing">See RuntimeGate &rarr;</a></p>
+      </section>
+      <section>
+        <h2>Related guides</h2>
+        <ul>
+          <li><a href="python-version-vs-pyproject-requires-python.html">Keep .python-version and requires-python in agreement</a></li>
+          <li><a href="tool-versions-mise-toml-vs-nvmrc-setup-node.html">When .tool-versions or mise.toml disagree with .nvmrc, setup-node, and Docker</a></li>
+          <li><a href="github-actions-node-version-file.html">Use a version file in GitHub Actions so CI cannot drift</a></li>
+        </ul>
+      </section>
+
+    </main>
+    <footer>
+      <nav class="family-nav" aria-label="Other tools in this family">
+        <span class="family-label">Also:</span>
+          <a href="https://ess2292.github.io/envgate/">EnvGate</a>
+          <a href="https://ess2292.github.io/runtimegate/" aria-current="page">RuntimeGate</a>
+          <a href="https://ess2292.github.io/lockgate/">LockGate</a>
+          <a href="https://ess2292.github.io/servicegate/">ServiceGate</a>
+      </nav>
+<div class="footer-row">
+        <div>RuntimeGate 0.2.1 by Emilio Straubel · pre-launch pages, not indexed</div>
+        <div class="footer-links">
+          <a href="../index.html">Home</a>
+          <a href="index.html" aria-current="page">Guides</a>
+          <a href="../privacy.html">Privacy</a>
+          <a href="../terms.html">Terms</a>
+          <a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a>
+          <a href="https://github.com/ESS2292/runtimegate-action/issues">Issues</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
