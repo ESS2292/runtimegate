@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rust in Docker: “lock file version `4` was found”, “feature `edition2024` is required”, and rust-toolchain.toml vs FROM rust: — RuntimeGate Guides</title>
+  <meta name="description" content="Reproduced on Docker with rust:1.76, 1.85, 1.95, and 1.100 images: why an old FROM rust: tag fails on a v4 Cargo.lock, edition2024 dependencies, or rust-version, when rust-toolchain.toml silently overrides the image, and how to keep the two in step." />
+  <meta name="author" content="Emilio Straubel" />
+  <meta name="robots" content="noindex" />
+  <meta property="og:title" content="Rust in Docker: “lock file version `4` was found”, “feature `edition2024` is required”, and rust-toolchain.toml vs FROM rust: — RuntimeGate Guides" />
+  <meta property="og:description" content="Reproduced on Docker with rust:1.76, 1.85, 1.95, and 1.100 images: why an old FROM rust: tag fails on a v4 Cargo.lock, edition2024 dependencies, or rust-version, when rust-toolchain.toml silently overrides the image, and how to keep the two in step." />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="RuntimeGate" />
+  <meta property="og:url" content="https://ess2292.github.io/runtimegate/guides/rust-toolchain-toml-vs-dockerfile-rust-image.html" />
+  <link rel="canonical" href="https://ess2292.github.io/runtimegate/guides/rust-toolchain-toml-vs-dockerfile-rust-image.html" />
+  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
+  <meta property="article:published_time" content="2026-11-25" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Rust in Docker: “lock file version `4` was found”, “feature `edition2024` is required”, and rust-toolchain.toml vs FROM rust: — RuntimeGate Guides" />
+  <meta name="twitter:description" content="Reproduced on Docker with rust:1.76, 1.85, 1.95, and 1.100 images: why an old FROM rust: tag fails on a v4 Cargo.lock, edition2024 dependencies, or rust-version, when rust-toolchain.toml silently overrides the image, and how to keep the two in step." />
+  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta name="twitter:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Rust in Docker: “lock file version `4` was found”, “feature `edition2024` is required”, and rust-toolchain.toml vs FROM rust:", "description": "Reproduced on Docker with rust:1.76, 1.85, 1.95, and 1.100 images: why an old FROM rust: tag fails on a v4 Cargo.lock, edition2024 dependencies, or rust-version, when rust-toolchain.toml silently overrides the image, and how to keep the two in step.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-25", "dateModified": "2026-11-25", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/rust-toolchain-toml-vs-dockerfile-rust-image.html", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.png"}</script>
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Primary">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark" aria-hidden="true">rg</span>
+        RuntimeGate
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#checks">What it checks</a></li>
+        <li><a href="../index.html#ci">CI</a></li>
+        <li><a href="../index.html#limits">Limits</a></li>
+        <li><a href="../index.html#pricing">Pricing</a></li>
+        <li><a href="index.html" aria-current="page">Guides</a></li>
+        <li><a href="../index.html#faq">FAQ</a></li>
+        <li><a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a></li>
+      </ul>
+    </nav>
+    <main id="main" class="article">
+      <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
+      <section>
+        <div class="eyebrow">Guide &middot; November 25, 2026</div>
+        <h1>Rust in Docker: “lock file version <code>4</code> was found”, “feature <code>edition2024</code> is required”, and rust-toolchain.toml vs <code>FROM rust:</code></h1>
+        <p class="lead">A Rust project that builds on your laptop can fail in <code>docker build</code> because the <code>FROM rust:…</code> tag is older than the toolchain everything else assumes. Cargo then stops on the lockfile, on a dependency’s edition, or on <code>rust-version</code>. The reverse also happens: if <code>rust-toolchain.toml</code> is copied into the image, rustup quietly downloads that toolchain and the image tag stops mattering. Each case below was reproduced, with the fix tested.</p>
+        <p>All output below came from Docker 26.1.5 on 25 November 2026, using the official images <code>rust:1.76-slim</code> (cargo 1.76.0, rustup 1.27.0), <code>rust:1.77-slim</code>, <code>rust:1.78-slim</code>, <code>rust:1.85-slim</code> (rustc 1.85.1, rustup 1.28.1), <code>rust:1.95-slim</code>, and <code>rust:1-slim</code> (rustc 1.100.0, rustup 1.29.3). The test crate is a one-file <code>hello</code> binary. Long download, install, and Docker context lines were trimmed and are marked <code>...</code>.</p>
+      </section>
+      <section>
+        <h2>Error 1: “lock file version <code>4</code> was found, but this version of Cargo does not understand this lock file”</h2>
+        <p>A <code>Cargo.lock</code> generated by current Cargo (here 1.100.0, no <code>rust-version</code> set) starts with <code>version = 4</code>. Building it with <code>FROM rust:1.76-slim</code>:</p>
+        <pre><code>&gt; [5/5] RUN cargo build --release --locked:
+0.200 error: failed to parse lock file at: /app/Cargo.lock
+0.200 
+0.200 Caused by:
+0.200   lock file version `4` was found, but this version of Cargo does not understand this lock file, perhaps Cargo needs to be updated?
+...
+ERROR: failed to solve: process "/bin/sh -c cargo build --release --locked" did not complete successfully: exit code: 101</code></pre>
+        <p>Cargo 1.77.2 printed the same error. Cargo 1.78.0 built the same lockfile without complaint. <code>--locked</code> does not change the outcome; parsing fails first.</p>
+        <p>Which lockfile version Cargo writes depends on <code>rust-version</code>. In rust-lang/cargo <code>src/resolver/resolve.rs</code> (main at <code>df742db</code>), <code>ResolveVersion::with_rust_version</code> picks V4 for <code>rust-version</code> ≥ 1.83, V3 for ≥ 1.53, and the default when <code>rust-version</code> is unset. I confirmed this with cargo 1.100.0: <code>rust-version</code> 1.76, 1.77, 1.78, and 1.82 produced <code>version = 3</code>; 1.83 and 1.85 produced <code>version = 4</code>. Cargo 1.85.1 with no <code>rust-version</code> also wrote <code>version = 4</code>; cargo 1.78.0 wrote <code>version = 3</code>.</p>
+        <p><strong>Fix:</strong> make the image at least 1.78, ideally the same series as your toolchain file. If you really must build on an older Cargo, set <code>rust-version</code> below 1.83 and regenerate the lockfile so it is written as v3.</p>
+      </section>
+      <section>
+        <h2>Error 2: “feature <code>edition2024</code> is required”</h2>
+        <p>The lockfile can be fine and a dependency still breaks the old image. A crate with <code>clap = "4"</code> and <code>rust-version = "1.76"</code> (edition 2021), locked by cargo 1.100.0, resolved to <code>clap</code> 4.6.10 and <code>clap_lex</code> 1.1.2. Both list <code>rust_version</code> 1.85 in the crates.io index. On <code>rust:1.76-slim</code>:</p>
+        <pre><code>error: failed to download replaced source registry `crates-io`
+
+Caused by:
+  failed to parse manifest at `/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/clap_lex-1.1.2/Cargo.toml`
+
+Caused by:
+  feature `edition2024` is required
+
+  The package requires the Cargo feature called `edition2024`, but that feature is not stabilized in this version of Cargo (1.76.0 (c84b36747 2024-01-18)).
+  Consider trying a newer version of Cargo (this may require the nightly release).
+  See https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#edition-2024 for more information about the status of this feature.</code></pre>
+        <p>The same project built on <code>rust:1.85-slim</code>. The <code>rust-version = "1.76"</code> line did not protect the lockfile: with edition 2021 (resolver 2), cargo 1.100.0 still locked the newest versions.</p>
+        <p><strong>Fix, tested:</strong> tell the resolver to respect your <code>rust-version</code>. With <code>.cargo/config.toml</code></p>
+        <pre><code>[resolver]
+incompatible-rust-versions = "fallback"</code></pre>
+        <p>regenerating the lockfile on cargo 1.100.0 printed:</p>
+        <pre><code>     Locking 15 packages to highest Rust 1.76 compatible versions
+      Adding clap v4.5.61 (available: v4.6.10, requires Rust 1.85)
+      Adding clap_builder v4.5.61 (available: v4.6.10, requires Rust 1.85)
+      Adding clap_lex v1.0.1 (available: v1.1.2, requires Rust 1.85)</code></pre>
+        <p>and the build on <code>rust:1.76-slim</code> then finished with exit 0. The Cargo book (<code>doc/book/src/reference/resolver.md</code>, “Rust version”) documents the <code>fallback</code> setting. The simpler fix is usually to raise the image to the toolchain you actually develop on.</p>
+      </section>
+      <section>
+        <h2>Error 3: your own <code>rust-version</code> is newer than the image</h2>
+        <p>With <code>rust-version = "1.85"</code> in <code>Cargo.toml</code> and <code>rust:1.76-slim</code>, cargo 1.76.0 says:</p>
+        <pre><code>error: package `demo v0.1.0 (/app)` cannot be built because it requires rustc 1.85 or newer, while the currently active rustc version is 1.76.0</code></pre>
+        <p>Newer Cargo words it differently. With <code>rust-version = "1.100"</code>, both <code>rust:1.85-slim</code> and <code>rust:1.95-slim</code> printed:</p>
+        <pre><code>error: rustc 1.85.1 is not supported by the following package:
+  demo@0.1.0 requires rustc 1.100</code></pre>
+        <p>(1.95.0 in the second run.) That newer message comes from <code>src/ops/cargo_compile/mod.rs</code> at <code>df742db</code>. When the incompatible package is a dependency rather than your own crate, the same code adds a hint to <code>cargo update &lt;name&gt;@&lt;current-ver&gt; --precise &lt;compatible-ver&gt;</code>.</p>
+      </section>
+      <section>
+        <h2>The opposite trap: rust-toolchain.toml overrides the image</h2>
+        <p>rustup’s <a href="https://rust-lang.github.io/rustup/overrides.html">overrides documentation</a> (<code>doc/user-guide/src/overrides.md</code>, rust-lang/rustup main at <code>7747d0c</code>) lists the order: <code>+toolchain</code> on the command line, <code>RUSTUP_TOOLCHAIN</code>, a directory override, the <code>rust-toolchain.toml</code> file, then the default toolchain. The official images just install one toolchain as the default, so a toolchain file in the build context beats the <code>FROM</code> tag.</p>
+        <p>Same project, <code>rust-toolchain.toml</code> with <code>channel = "1.85"</code>, Dockerfile <code>FROM rust:1.76-slim</code> with <code>COPY . .</code>:</p>
+        <pre><code>#8 0.341 info: downloading component 'rust-docs'
+...
+#8 10.48 rustc 1.85.1 (4eb161250 2025-03-15)
+#8 10.55    Compiling demo v0.1.0 (/app)
+#8 10.63     Finished `release` profile [optimized] target(s) in 0.12s</code></pre>
+        <p>The image’s 1.76 was never used. rustup 1.27.0 downloaded six components, including <code>rust-docs</code>, on every uncached build. On <code>rust:1-slim</code> (rustup 1.29.3, profile <code>minimal</code> in <code>settings.toml</code>) it downloaded three and warned:</p>
+        <pre><code>info: syncing channel updates for 1.85-x86_64-unknown-linux-gnu
+info: latest update on 2025-03-18 for version 1.85.1 (4eb161250 2025-03-15)
+info: downloading 3 components
+warn: the missing active toolchain `1.85-x86_64-unknown-linux-gnu` has been auto-installed
+warn: this might cause rustup commands to take longer time to finish than expected
+info: you may opt out with `RUSTUP_AUTO_INSTALL=0` or `rustup set auto-install disable`
+rustc 1.85.1 (4eb161250 2025-03-15)</code></pre>
+        <p>With <code>-e RUSTUP_AUTO_INSTALL=0</code> the same container fails instead:</p>
+        <pre><code>error: toolchain '1.85-x86_64-unknown-linux-gnu' is not installed
+help: run `rustup toolchain install` to install it</code></pre>
+        <p>and <code>rustup show active-toolchain</code> says <code>the toolchain file at '/app/rust-toolchain.toml' specifies an uninstalled toolchain</code>. rustup’s CHANGELOG records the history: 1.28.0 (2025-03-04) stopped auto-installing, and 1.28.1 (2025-03-05) “restore[d] the automatic install behavior by default,” with <code>RUSTUP_AUTO_INSTALL=0</code> as the opt-out.</p>
+        <p>The switch depends on what you copy. The common cache-friendly Dockerfile copies only <code>Cargo.toml</code>, <code>Cargo.lock</code>, and <code>src</code>. Then the toolchain file is not in the image, the old tag is used, and you get Error 1, 2, or 3 even though the toolchain file says 1.85. That is exactly the drift run in the next section.</p>
+        <h3>The same thing happens in CI</h3>
+        <p><code>dtolnay/rust-toolchain</code> (main at <code>df2a88e</code>) runs <code>rustup toolchain install … --profile minimal</code> and then <code>rustup default</code>. I ran those two commands for 1.76 in a container next to a <code>channel = "1.85"</code> toolchain file:</p>
+        <pre><code>info: default toolchain set to 1.76-x86_64-unknown-linux-gnu
+...
+info: note that the toolchain '1.85-x86_64-unknown-linux-gnu' is currently in use (overridden by '/app/rust-toolchain.toml')
+rustc 1.85.1 (4eb161250 2025-03-15)</code></pre>
+        <p>Outside the project directory, <code>rustc --version</code> was 1.76.0. A workflow that says <code>@1.76</code> may therefore test 1.85 while your Dockerfile ships 1.76. (This used the action’s commands, not a GitHub-hosted run of the action.)</p>
+      </section>
+      <section>
+        <h2>A checklist</h2>
+        <ol>
+          <li>Pick one version and put it in <code>rust-toolchain.toml</code> (<code>channel = "1.85.1"</code> or <code>"1.85"</code>, not <code>"stable"</code>).</li>
+          <li>Make every <code>FROM rust:…</code> tag (builder stages too) and every Compose <code>image: rust:…</code> the same major.minor.</li>
+          <li>Keep <code>rust-version</code> in <code>Cargo.toml</code> at or below that version, and remember it changes the lockfile format at 1.83.</li>
+          <li>If an older toolchain must build the project, set <code>incompatible-rust-versions = "fallback"</code> and regenerate <code>Cargo.lock</code>.</li>
+          <li>In Docker, set <code>ENV RUSTUP_AUTO_INSTALL=0</code> if you would rather fail than download a different toolchain mid-build.</li>
+        </ol>
+      </section>
+      <section>
+        <h2>What RuntimeGate catches here, and what it doesn’t</h2>
+        <p>RuntimeGate compares Rust pins from <code>rust-toolchain.toml</code>, a legacy <code>rust-toolchain</code> file, <code>.tool-versions</code>, <code>mise.toml</code>, <code>FROM rust:…</code>, Compose <code>image: rust:…</code>, and dev containers. Rust compatibility is the major.minor series. I ran the RuntimeGate 0.2.1 CLI on seven small test repos.</p>
+        <p><strong>Drift</strong> (<code>rust-toolchain.toml</code> 1.85, <code>FROM rust:1.76-slim</code> with the cache-friendly COPY, Compose <code>rust:1.85-slim</code>), the same layout that hit Error 1 in Docker above:</p>
+        <pre><code>RuntimeGate checked 3 declarations (node, python, go, rust).
+
+Errors (1):
+  [series-mismatch] Rust pins disagree on the major.minor series (1.76 vs 1.85).
+exit=1</code></pre>
+        <p><strong>Legacy file vs .tool-versions</strong> (<code>rust-toolchain</code> containing <code>1.85</code>, <code>.tool-versions</code> <code>rust 1.84.1</code>, builder stage <code>FROM rust:1.85-slim AS build</code>):</p>
+        <pre><code>RuntimeGate checked 3 declarations (node, python, go, rust).
+
+Errors (1):
+  [series-mismatch] Rust pins disagree on the major.minor series (1.84 vs 1.85).
+exit=1</code></pre>
+        <p><strong>Patch only</strong> (<code>channel = "1.85.0"</code>, <code>FROM rust:1.85.1-slim</code>):</p>
+        <pre><code>RuntimeGate checked 2 declarations (node, python, go, rust).
+
+Warnings (1):
+  [patch-mismatch] Rust pins agree on 1.85 but disagree on patch (Dockerfile#FROM@Dockerfile:1.85.1-slim, rust-toolchain.toml#channel@rust-toolchain.toml:1.85.0).
+exit=0</code></pre>
+        <p><strong>Clean</strong> (<code>channel = "1.85.1"</code>, <code>FROM rust:1.85.1-slim</code>, Compose <code>rust:1.85.1-slim</code>):</p>
+        <pre><code>RuntimeGate checked 3 declarations (node, python, go, rust).
+OK — declared runtimes agree.
+exit=0</code></pre>
+        <p>Here are the gaps, based on those runs:</p>
+        <ul>
+          <li><strong><code>Cargo.toml</code> <code>rust-version</code> is not read.</strong> A repo with only <code>rust-version = "1.85"</code> and <code>FROM rust:1.76-slim</code> printed <code>RuntimeGate checked 1 declaration</code> and <code>OK — declared runtimes agree.</code>, exit 0, although that exact pair fails with Error 3.</li>
+          <li><strong>The lockfile version and dependency MSRVs are not checked.</strong> RuntimeGate does not read <code>Cargo.lock</code>, the crates.io index, or editions, so Errors 1 and 2 are only caught indirectly, when a toolchain file also disagrees with the image.</li>
+          <li><strong><code>channel = "stable"</code> is only a warning.</strong> With <code>FROM rust:1.76-slim</code> it printed <code>[floating-tag] rust-toolchain.toml#channel in rust-toolchain.toml uses floating tag "stable", which can move.</code> and exited 0.</li>
+          <li><strong>No Rust CI steps.</strong> A workflow using <code>dtolnay/rust-toolchain@1.76</code> next to a 1.85 toolchain file and image passed with 2 declarations. RuntimeGate reads <code>setup-node</code>, <code>setup-python</code>, and <code>setup-go</code>, not Rust actions or <code>rustup</code> commands.</li>
+          <li><strong>No Docker build-context awareness.</strong> It does not know whether <code>rust-toolchain.toml</code> is copied into the image or excluded by <code>.dockerignore</code>, or whether <code>RUSTUP_AUTO_INSTALL</code> is set.</li>
+          <li><strong>No Rust end-of-support check.</strong> <code>--eol</code> printed <code>[eol-unknown]</code> warnings for each Rust pin (“RuntimeGate does not vendor a Rust end-of-support schedule”).</li>
+          <li>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite Action</a> (v1, <code>a30a806</code>) checks Node.js only. On the drift repo it printed <code>RuntimeGate checked 0 declarations (node).</code> and <code>No runtime version declarations found.</code> and exited 0.</li>
+        </ul>
+        <p>RuntimeGate catches the common root cause, a toolchain file and a <code>FROM rust:</code> tag on different series. It is not a substitute for reading Cargo’s error. Checkout for the CLI is not live.</p>
+        <p><small>Sources checked on 25 November 2026: rust-lang/cargo main at <code>df742db</code> (<code>src/resolver/encode.rs</code>, <code>src/resolver/resolve.rs</code>, <code>src/ops/cargo_compile/mod.rs</code>, <code>doc/book/src/reference/resolver.md</code>); rust-lang/rustup main at <code>7747d0c</code> (<code>CHANGELOG.md</code>, <code>doc/user-guide/src/overrides.md</code>, <code>doc/user-guide/src/environment-variables.md</code>, <code>src/config.rs</code>, <code>src/toolchain.rs</code>); dtolnay/rust-toolchain main at <code>df2a88e</code> (<code>action.yml</code>); the crates.io sparse index for <code>clap</code> and <code>clap_lex</code>. All Cargo and rustup output above came from the official Docker Hub <code>rust</code> images on Docker 26.1.5. RuntimeGate output came from the 0.2.1 CLI on Node.js 24.22.1 and the Lite Action v1 source, run locally. No GitHub-hosted runner was used.</small></p>
+      </section>
+      <section class="cta-box" aria-label="RuntimeGate">
+        <h2>Want the check in CI?</h2>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite GitHub Action</a> checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python, Go, and Rust, with a JSON report and an optional end-of-support check, locally or in any CI. Checkout is not live.</p>
+        <p><strong>$19 one-time</strong> &middot; Node 18+ &middot; zero runtime dependencies &middot; MIT source included. Checkout is not live.</p>
+        <p><a class="cta-link" href="../index.html#pricing">See RuntimeGate &rarr;</a></p>
+      </section>
+      <section>
+        <h2>Related guides</h2>
+        <ul>
+          <li><a href="gomod-vs-setup-go-dockerfile.html">When go.mod, setup-go, and the Dockerfile disagree</a></li>
+          <li><a href="tool-versions-mise-toml-vs-nvmrc-setup-node.html">When .tool-versions or mise.toml disagree with .nvmrc, setup-node, and Docker</a></li>
+          <li><a href="nvmrc-dockerfile-ci-node-version-drift.html">Do your .nvmrc, Dockerfile, and CI agree on Node.js?</a></li>
+        </ul>
+      </section>
+
+    </main>
+    <footer>
+      <nav class="family-nav" aria-label="Other tools in this family">
+        <span class="family-label">Also:</span>
+          <a href="https://ess2292.github.io/envgate/">EnvGate</a>
+          <a href="https://ess2292.github.io/runtimegate/" aria-current="page">RuntimeGate</a>
+          <a href="https://ess2292.github.io/lockgate/">LockGate</a>
+          <a href="https://ess2292.github.io/servicegate/">ServiceGate</a>
+      </nav>
+<div class="footer-row">
+        <div>RuntimeGate 0.2.1 by Emilio Straubel · pre-launch pages, not indexed</div>
+        <div class="footer-links">
+          <a href="../index.html">Home</a>
+          <a href="index.html" aria-current="page">Guides</a>
+          <a href="../privacy.html">Privacy</a>
+          <a href="../terms.html">Terms</a>
+          <a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a>
+          <a href="https://github.com/ESS2292/runtimegate-action/issues">Issues</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
