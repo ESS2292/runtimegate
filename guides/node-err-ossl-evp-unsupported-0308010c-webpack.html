@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>“error:0308010C:digital envelope routines::unsupported” (ERR_OSSL_EVP_UNSUPPORTED): webpack 4, react-scripts 4, and Node.js version drift — RuntimeGate Guides</title>
+  <meta name="description" content="Reproduced on Docker with node:16 through node:24 images: which webpack and react-scripts versions hit ERR_OSSL_EVP_UNSUPPORTED on Node 17+, why --openssl-legacy-provider exits 9 on Node 16, and the tested upgrades that fix it." />
+  <meta name="author" content="Emilio Straubel" />
+  <meta name="robots" content="noindex" />
+  <meta property="og:title" content="“error:0308010C:digital envelope routines::unsupported” (ERR_OSSL_EVP_UNSUPPORTED): webpack 4, react-scripts 4, and Node.js version drift — RuntimeGate Guides" />
+  <meta property="og:description" content="Reproduced on Docker with node:16 through node:24 images: which webpack and react-scripts versions hit ERR_OSSL_EVP_UNSUPPORTED on Node 17+, why --openssl-legacy-provider exits 9 on Node 16, and the tested upgrades that fix it." />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="RuntimeGate" />
+  <meta property="og:url" content="https://ess2292.github.io/runtimegate/guides/node-err-ossl-evp-unsupported-0308010c-webpack.html" />
+  <link rel="canonical" href="https://ess2292.github.io/runtimegate/guides/node-err-ossl-evp-unsupported-0308010c-webpack.html" />
+  <meta property="og:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
+  <meta property="article:published_time" content="2026-11-27" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="“error:0308010C:digital envelope routines::unsupported” (ERR_OSSL_EVP_UNSUPPORTED): webpack 4, react-scripts 4, and Node.js version drift — RuntimeGate Guides" />
+  <meta name="twitter:description" content="Reproduced on Docker with node:16 through node:24 images: which webpack and react-scripts versions hit ERR_OSSL_EVP_UNSUPPORTED on Node 17+, why --openssl-legacy-provider exits 9 on Node 16, and the tested upgrades that fix it." />
+  <meta name="twitter:image" content="https://ess2292.github.io/runtimegate/og-image.png" />
+  <meta name="twitter:image:alt" content="RuntimeGate — fail CI when runtime pins disagree" />
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "“error:0308010C:digital envelope routines::unsupported” (ERR_OSSL_EVP_UNSUPPORTED): webpack 4, react-scripts 4, and Node.js version drift", "description": "Reproduced on Docker with node:16 through node:24 images: which webpack and react-scripts versions hit ERR_OSSL_EVP_UNSUPPORTED on Node 17+, why --openssl-legacy-provider exits 9 on Node 16, and the tested upgrades that fix it.", "author": {"@type": "Person", "name": "Emilio Straubel"}, "datePublished": "2026-11-27", "dateModified": "2026-11-27", "mainEntityOfPage": "https://ess2292.github.io/runtimegate/guides/node-err-ossl-evp-unsupported-0308010c-webpack.html", "publisher": {"@type": "Person", "name": "Emilio Straubel"}, "image": "https://ess2292.github.io/runtimegate/og-image.png"}</script>
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Primary">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark" aria-hidden="true">rg</span>
+        RuntimeGate
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#checks">What it checks</a></li>
+        <li><a href="../index.html#ci">CI</a></li>
+        <li><a href="../index.html#limits">Limits</a></li>
+        <li><a href="../index.html#pricing">Pricing</a></li>
+        <li><a href="index.html" aria-current="page">Guides</a></li>
+        <li><a href="../index.html#faq">FAQ</a></li>
+        <li><a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a></li>
+      </ul>
+    </nav>
+    <main id="main" class="article">
+      <p class="crumbs"><a href="../index.html">RuntimeGate</a> / <a href="index.html">Guides</a></p>
+      <section>
+        <div class="eyebrow">Guide &middot; November 27, 2026</div>
+        <h1>“error:0308010C:digital envelope routines::unsupported” (<code>ERR_OSSL_EVP_UNSUPPORTED</code>): webpack 4, react-scripts 4, and Node.js version drift</h1>
+        <p class="lead">This error usually shows up the day a webpack 4 or Create React App 4 project meets a newer Node.js: a new <code>FROM node:</code> tag, a CI runner moved to a newer Node, or a teammate on a newer laptop install. Node.js 17 and later ship OpenSSL 3, which disables the MD4 hash that webpack 4 uses for module hashes. The usual workaround, <code>NODE_OPTIONS=--openssl-legacy-provider</code>, then breaks the build for anyone still on Node.js 16. Each case below was reproduced, with the fix tested.</p>
+        <p>All output below came from Docker 26.1.5 on 27 November 2026, using the official images <code>node:16-slim</code> (Node.js 16.20.2, OpenSSL 1.1.1v), <code>node:17-slim</code> (17.9.1, OpenSSL 3.0.3), <code>node:18-slim</code> (18.20.8, OpenSSL 3.0.16), <code>node:20-slim</code> (20.20.2, OpenSSL 3.0.19), <code>node:22-slim</code> (22.23.5, OpenSSL 3.5.9), and <code>node:24-slim</code> (24.22.3, OpenSSL 3.5.9). The test projects are a one-line <code>src/index.js</code> built with <code>webpack --mode production</code>, and a minimal React 17 app built with <code>react-scripts build</code>. Long stack traces and npm notices were trimmed and are marked <code>...</code>.</p>
+      </section>
+      <section>
+        <h2>The error</h2>
+        <p>webpack 4.46.0 with webpack-cli 3.3.12, built in <code>FROM node:18-slim</code>:</p>
+        <pre><code>#10 [6/6] RUN npm run build
+#10 0.226 &gt; wp@1.0.0 build
+#10 0.226 &gt; webpack --mode production
+#10 0.799 node:internal/crypto/hash:69
+#10 0.799   this[kHandle] = new _Hash(algorithm, xofLen);
+#10 0.799                   ^
+#10 0.799 
+#10 0.799 Error: error:0308010C:digital envelope routines::unsupported
+#10 0.799     at new Hash (node:internal/crypto/hash:69:19)
+#10 0.799     at Object.createHash (node:crypto:133:10)
+#10 0.799     at module.exports (/app/node_modules/webpack/lib/util/createHash.js:135:53)
+#10 0.799     at NormalModule._initBuildHash (/app/node_modules/webpack/lib/NormalModule.js:417:16)
+...
+#10 0.799   opensslErrorStack: [ 'error:03000086:digital envelope routines::initialization error' ],
+#10 0.799   library: 'digital envelope routines',
+#10 0.799   reason: 'unsupported',
+#10 0.799   code: 'ERR_OSSL_EVP_UNSUPPORTED'
+#10 0.799 }
+#10 0.799 
+#10 0.799 Node.js v18.20.8
+#10 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1</code></pre>
+        <p>On Node.js 22.23.5 the same build prints a two-entry <code>opensslErrorStack</code> (<code>'error:03000086:digital envelope routines::initialization error'</code> and <code>'error:0308010C:digital envelope routines::unsupported'</code>) and exits 1. With webpack 5.60.0 and webpack-cli 4.10.0 the first line is <code>[webpack-cli] Error: error:0308010C:digital envelope routines::unsupported</code>, the trace goes through <code>DefinePlugin.js</code>, and the exit code is 2.</p>
+        <p>The cause is one line. webpack 4.46.0’s <code>lib/util/createHash.js</code> passes the hash name straight to Node: <code>return new BulkUpdateDecorator(require("crypto").createHash(algorithm));</code>, and webpack 4 defaults to <code>md4</code> (<code>this.set("output.hashFunction", "md4");</code> in <code>lib/WebpackOptionsDefaulter.js</code>). Calling <code>require("crypto").createHash("md4")</code> directly gives the same result:</p>
+        <pre><code>node 16.20.2: md4 ok
+node 17.9.1:  ERR_OSSL_EVP_UNSUPPORTED error:0308010C:digital envelope routines::unsupported
+node 18.20.8: ERR_OSSL_EVP_UNSUPPORTED error:0308010C:digital envelope routines::unsupported
+node 20.20.2: ERR_OSSL_EVP_UNSUPPORTED error:0308010C:digital envelope routines::unsupported
+node 22.23.5: ERR_OSSL_EVP_UNSUPPORTED error:0308010C:digital envelope routines::unsupported
+node 24.22.3: ERR_OSSL_EVP_UNSUPPORTED error:0308010C:digital envelope routines::unsupported</code></pre>
+        <p>The Node.js 17.0.0 changelog (<code>doc/changelogs/CHANGELOG_V17.md</code> at tag <code>v17.0.0</code>) says so directly: “If you hit an <code>ERR_OSSL_EVP_UNSUPPORTED</code> error in your application with Node.js 17, it’s likely that your application or a module you’re using is attempting to use an algorithm or key size which is no longer allowed by default with OpenSSL 3.0. A command-line option, <code>--openssl-legacy-provider</code>, has been added to revert to the legacy provider as a temporary workaround for these tightened restrictions.”</p>
+      </section>
+      <section>
+        <h2>Which webpack and Node.js versions fail</h2>
+        <p>The same one-file project, <code>npx webpack --mode production</code>, on each image:</p>
+        <table class="compare">
+          <thead><tr><th>Bundler</th><th>Node 16</th><th>Node 17</th><th>Node 18</th><th>Node 20</th><th>Node 22</th><th>Node 24</th></tr></thead>
+          <tbody>
+            <tr><td>webpack 4.46.0</td><td>pass</td><td>fail (1)</td><td>fail (1)</td><td>fail (1)</td><td>fail (1)</td><td>fail (1)</td></tr>
+            <tr><td>webpack 4.47.0</td><td>pass</td><td>fail (1)</td><td>pass</td><td>pass</td><td>pass</td><td>pass</td></tr>
+            <tr><td>webpack 5.60.0</td><td>pass</td><td>fail (2)</td><td>fail (2)</td><td>fail (2)</td><td>fail (2)</td><td>fail (2)</td></tr>
+            <tr><td>webpack 5.61.0</td><td>pass</td><td>pass</td><td>pass</td><td>pass</td><td>pass</td><td>pass</td></tr>
+            <tr><td>webpack 5.113.0</td><td>pass</td><td>pass</td><td>pass</td><td>pass</td><td>pass</td><td>pass</td></tr>
+            <tr><td>react-scripts 4.0.3 (webpack 4.44.2)</td><td>pass</td><td>not run</td><td>fail (1)</td><td>not run</td><td>fail (1)</td><td>fail (1)</td></tr>
+            <tr><td>react-scripts 5.0.1 (webpack 5.113.0)</td><td>pass</td><td>not run</td><td>pass</td><td>not run</td><td>pass</td><td>pass</td></tr>
+          </tbody>
+        </table>
+        <p>The exit code is in brackets. The release notes match: webpack <a href="https://github.com/webpack/webpack/releases/tag/v5.61.0">v5.61.0</a> (tag commit <code>0306510</code>, 29 October 2021) lists “use a wasm md4 implementation for node 17 support”, and <a href="https://github.com/webpack/webpack/releases/tag/v4.47.0">v4.47.0</a> (tag commit <code>dfffd6a</code>, 6 September 2023) lists “[Security] - Add support for md4 in Node &gt;=18” (PR #17628).</p>
+        <p>The 4.47.0 fix only covers Node.js 18 and later, which explains the Node 17 failure in the table. Its <code>createHash.js</code> sets <code>const NODE_MAJOR_VERSION = parseInt(process.versions.node, 10);</code> and switches to the bundled MD4 only <code>if (NODE_MAJOR_VERSION &gt;= 18)</code>. Below 18 it falls through to <code>crypto.createHash(algorithm)</code>, which works on Node 16 but not on Node 17’s OpenSSL 3. Node 17 has been end-of-life since 1 June 2022, so that rarely matters now.</p>
+      </section>
+      <section>
+        <h2>Fix 1: upgrade the bundler (tested)</h2>
+        <ul>
+          <li><strong>Plain webpack 4:</strong> move to <code>webpack@4.47.0</code>. It built on Node 18, 20, 22, and 24 with no flags. If <code>package.json</code> says <code>"webpack": "^4.46.0"</code>, the lockfile is what holds you on 4.46.0; <code>npm install webpack@4.47.0</code> updates both.</li>
+          <li><strong>webpack 5:</strong> anything from 5.61.0 on. 5.61.0 and 5.113.0 built on every image from Node 16 to 24.</li>
+          <li><strong>Create React App 4:</strong> upgrade to <code>react-scripts@5.0.1</code> (its <code>package.json</code> requires <code>"webpack": "^5.64.4"</code>; it resolved to 5.113.0 here). The test app built on Node 16, 18, 22, and 24.</li>
+        </ul>
+        <p><strong>Overriding webpack inside react-scripts 4 does not work.</strong> react-scripts 4.0.3 requires exactly <code>webpack 4.44.2</code>. I added <code>"overrides": { "webpack": "4.47.0" }</code> and reinstalled. <code>npm ls webpack</code> showed 4.47.0 everywhere, but the build stopped at CRA’s preflight check:</p>
+        <pre><code>There might be a problem with the project dependency tree.
+It is likely not a bug in Create React App, but something you need to fix locally.
+
+The react-scripts package provided by Create React App requires a dependency:
+
+  "webpack": "4.44.2"
+...
+  /app/node_modules/webpack (version: 4.47.0) </code></pre>
+        <p>With <code>SKIP_PREFLIGHT_CHECK=true</code> it built on Node 16 but still failed on 18, 22, and 24:</p>
+        <pre><code>Creating an optimized production build...
+Failed to compile.
+
+./src/index.js
+Error: error:0308010C:digital envelope routines::unsupported
+    at Generator.next (&lt;anonymous&gt;)
+...</code></pre>
+        <p>webpack is not the only MD4 user there. The installed <code>babel-loader</code> 8.1.0 has <code>const hash = crypto.createHash("md4");</code> at line 94 of <code>lib/cache.js</code>. For CRA 4, the real fix is react-scripts 5.</p>
+      </section>
+      <section>
+        <h2>Fix 2: <code>--openssl-legacy-provider</code>, and why it breaks Node.js 16</h2>
+        <p>Setting <code>NODE_OPTIONS=--openssl-legacy-provider</code> made the webpack 4.46.0 build pass on Node 17, 18, 20, 22, and 24 (<code>Version: webpack 4.46.0</code>, exit 0). It also made the react-scripts 4.0.3 build print <code>Compiled successfully.</code> on Node 22. It turns on OpenSSL’s legacy provider for the whole Node process, not just for webpack, and Node’s changelog calls it a “temporary workaround”.</p>
+        <p>The catch is Node.js 16. On the official <code>node:16-slim</code> image, any build that has the flag set fails before webpack even starts:</p>
+        <pre><code>$ NODE_OPTIONS=--openssl-legacy-provider npx webpack --mode production
+node: --openssl-legacy-provider is not allowed in NODE_OPTIONS
+exit=9
+
+$ node --openssl-legacy-provider -p process.version
+node: bad option: --openssl-legacy-provider
+exit=9</code></pre>
+        <p>The v16.20.2 <code>doc/api/cli.md</code> explains why: the option was “added: v16.17.0” but only to “Enable OpenSSL 3.0 legacy provider when dynamically linking to OpenSSL 3.x.” The official Node 16 binaries use OpenSSL 1.1.1 (<code>1.1.1v+quic</code> here), so the option does not exist. Exit code 9 is “Invalid Argument: Either an unknown option was specified, or an option requiring a value was provided without a value” (<code>doc/api/process.md</code> at <code>v24.22.1</code>).</p>
+        <p>This is where version drift comes in. The common hotfix is to bake the flag into the script:</p>
+        <pre><code>"build": "NODE_OPTIONS=--openssl-legacy-provider webpack --mode production"</code></pre>
+        <p>With <code>FROM node:22-slim</code>, that repo’s <code>docker build</code> passed. A developer whose <code>.nvmrc</code> still says <code>16</code> then runs <code>npm run build</code> and gets:</p>
+        <pre><code>&gt; wp@1.0.0 build
+&gt; NODE_OPTIONS=--openssl-legacy-provider webpack --mode production
+
+node: --openssl-legacy-provider is not allowed in NODE_OPTIONS
+exit=9</code></pre>
+        <p>Without the flag it fails in Docker; with it, it fails on Node 16. Either way, the real problem is that the repo runs two Node.js majors.</p>
+      </section>
+      <section>
+        <h2>How the drift happens</h2>
+        <p>The failing <code>docker build</code> above came from this layout. It builds locally on Node 16 and in CI on Node 16, because <code>setup-node</code> reads <code>.nvmrc</code>:</p>
+        <pre><code># .nvmrc
+16
+
+# Dockerfile
+FROM node:18-slim
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY src ./src
+RUN npm run build
+
+# .github/workflows/ci.yml (excerpt)
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc</code></pre>
+        <p>Inside the <code>node:16-slim</code> image the build passed. <code>docker build</code> with <code>FROM node:18-slim</code> failed with the error at the top of this guide. (This used the same commands in containers, not a GitHub-hosted runner.)</p>
+      </section>
+      <section>
+        <h2>A checklist</h2>
+        <ol>
+          <li>Pick one Node.js major and use it in <code>.nvmrc</code>, every <code>FROM node:…</code> tag, and CI (<code>node-version-file: .nvmrc</code>).</li>
+          <li>Upgrade the bundler instead of adding the flag: webpack 4.47.0+ (Node 18+), webpack 5.61.0+, or react-scripts 5.0.1.</li>
+          <li>If you must use <code>--openssl-legacy-provider</code>, do it only once every pin is on Node 17 or later. Official Node 16 builds exit 9.</li>
+          <li>Leave Node 16 and 17: both are past end of support.</li>
+        </ol>
+      </section>
+      <section>
+        <h2>What RuntimeGate catches here, and what it doesn’t</h2>
+        <p>RuntimeGate compares Node.js pins from <code>.nvmrc</code>, <code>.node-version</code>, <code>.tool-versions</code>, <code>mise.toml</code>, <code>package.json</code> <code>engines</code>/Volta/<code>devEngines</code>, <code>FROM node:…</code>, Compose, dev containers, and <code>actions/setup-node</code>. Node compatibility is the major version. I ran the RuntimeGate 0.2.1 CLI on four small test repos, the same ones built in Docker above.</p>
+        <p><strong>Drift</strong> (<code>.nvmrc</code> 16, <code>FROM node:18-slim</code>, setup-node <code>node-version-file: .nvmrc</code>, webpack 4.46.0), whose <code>docker build</code> failed with the error:</p>
+        <pre><code>RuntimeGate checked 3 declarations (node, python, go, rust).
+
+Errors (1):
+  [major-mismatch] Node.js pins disagree on the major version (16 vs 18).
+exit=1</code></pre>
+        <p>With <code>--eol</code>:</p>
+        <pre><code>RuntimeGate checked 3 declarations (node, python, go, rust).
+
+Errors (3):
+  [major-mismatch] Node.js pins disagree on the major version (16 vs 18).
+  [eol] .nvmrc in .nvmrc (16) is past end of support (ended 2023-09-11).
+  [eol] Dockerfile#FROM in Dockerfile (18) is past end of support (ended 2025-04-30).
+exit=1</code></pre>
+        <p><strong>Flag baked in</strong> (<code>.nvmrc</code> 16, <code>FROM node:22-slim</code>, <code>NODE_OPTIONS=--openssl-legacy-provider</code> in the build script). Docker passed, Node 16 exited 9:</p>
+        <pre><code>RuntimeGate checked 2 declarations (node, python, go, rust).
+
+Errors (1):
+  [major-mismatch] Node.js pins disagree on the major version (16 vs 22).
+exit=1</code></pre>
+        <p><strong>Clean</strong> (<code>.nvmrc</code> 22, <code>FROM node:22-slim</code>, setup-node from <code>.nvmrc</code>, webpack 5.113.0). <code>docker build</code> passed:</p>
+        <pre><code>RuntimeGate checked 3 declarations (node, python, go, rust).
+OK — declared runtimes agree.
+exit=0</code></pre>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite Action</a> (v1, <code>a30a806</code>) is Node-only, so it covers this case. Run from source on the drift repo:</p>
+        <pre><code>::error title=RuntimeGate Lite::[major-mismatch] Node.js pins disagree on the major version (16 vs 18).
+RuntimeGate checked 3 declarations (node).
+
+Errors (1):
+  [major-mismatch] Node.js pins disagree on the major version (16 vs 18).
+exit=1
+ok=false
+errors=1
+warnings=0
+codes=major-mismatch</code></pre>
+        <p>On the flag-baked-in repo it reported <code>(16 vs 22)</code> and exited 1. On the clean repo it printed <code>OK — declared runtimes agree.</code> and exited 0. With <code>INPUT_EOL=true</code> on the drift repo it printed the same three errors as the CLI’s <code>--eol</code> run.</p>
+        <p>Here are the gaps, based on those runs:</p>
+        <ul>
+          <li><strong>RuntimeGate does not detect this error itself.</strong> A “hidden” repo with every pin on Node 22 (<code>.nvmrc</code>, <code>FROM node:22-slim</code>, setup-node) but still on webpack 4.46.0 failed <code>docker build</code> with <code>error:0308010C</code>. The CLI and Lite both printed <code>RuntimeGate checked 3 declarations</code> and <code>OK — declared runtimes agree.</code> and exited 0, and so did <code>--eol</code>. Agreement between pins does not mean your dependencies support that Node version.</li>
+          <li><strong>No dependency or bundler checks.</strong> RuntimeGate does not read <code>node_modules</code>, lockfiles, or dependency versions. It cannot tell you that webpack 4.46.0, webpack 5.60.0, react-scripts 4.0.3, or babel-loader 8.1.0 need MD4.</li>
+          <li><strong><code>NODE_OPTIONS</code> is not read.</strong> It does not look at <code>--openssl-legacy-provider</code> in <code>package.json</code> scripts, Dockerfile <code>ENV</code>, or workflow <code>env:</code>. It caught the Node 16 vs 22 split in the flag repo, but not the flag itself.</li>
+          <li><strong>Major version only, with no bundler context.</strong> A <code>.nvmrc</code> of 17 next to <code>FROM node:18-slim</code> printed <code>[major-mismatch] Node.js pins disagree on the major version (17 vs 18).</code>, but RuntimeGate does not know that webpack 4.47.0’s fix starts at 18, or that Node 16 rejects the legacy-provider flag.</li>
+          <li><strong>No Docker build-context or runtime awareness.</strong> It reads declared pins. It does not build images or run your bundler.</li>
+        </ul>
+        <p>RuntimeGate catches the common root cause, a laptop or CI Node.js major that differs from the image. It is not a substitute for upgrading the bundler. Checkout for the CLI is not live.</p>
+        <p><small>Sources checked on 27 November 2026: nodejs/node tags <code>v17.0.0</code> (<code>doc/changelogs/CHANGELOG_V17.md</code>), <code>v16.20.2</code> and <code>v24.22.1</code> (<code>doc/api/cli.md</code>, <code>doc/api/process.md</code>); webpack/webpack release notes for v4.47.0 (<code>dfffd6a</code>) and v5.61.0 (<code>0306510</code>); <code>lib/util/createHash.js</code> as installed from npm for webpack 4.46.0, 4.47.0, and 5.61.0; react-scripts 4.0.3 and 5.0.1 and babel-loader 8.1.0 as installed from npm. All Node.js and bundler output above came from the official Docker Hub <code>node</code> images on Docker 26.1.5. RuntimeGate output came from the 0.2.1 CLI on Node.js 24.22.1 and the Lite Action v1 source, run locally. No GitHub-hosted runner was used.</small></p>
+      </section>
+      <section class="cta-box" aria-label="RuntimeGate">
+        <h2>Want the check in CI?</h2>
+        <p>The free <a href="https://github.com/ESS2292/runtimegate-action">RuntimeGate Lite GitHub Action</a> checks Node.js pins only. The full <strong>RuntimeGate CLI</strong> also covers Python, Go, and Rust, with a JSON report and an optional end-of-support check, locally or in any CI. Checkout is not live.</p>
+        <p><strong>$19 one-time</strong> &middot; Node 18+ &middot; zero runtime dependencies &middot; MIT source included. Checkout is not live.</p>
+        <p><a class="cta-link" href="../index.html#pricing">See RuntimeGate &rarr;</a></p>
+      </section>
+      <section>
+        <h2>Related guides</h2>
+        <ul>
+          <li><a href="nvmrc-dockerfile-ci-node-version-drift.html">Do your .nvmrc, Dockerfile, and CI agree on Node.js?</a></li>
+          <li><a href="find-eol-node-pins-after-node-20.html">Node 20 is past end of support — find every pin in the repo</a></li>
+          <li><a href="npm-ebadengine-engine-strict-devengines-yarn-pnpm.html">npm WARN EBADENGINE vs “The engine "node" is incompatible”: how npm, Yarn, and pnpm enforce engines</a></li>
+        </ul>
+      </section>
+
+    </main>
+    <footer>
+      <nav class="family-nav" aria-label="Other tools in this family">
+        <span class="family-label">Also:</span>
+          <a href="https://ess2292.github.io/envgate/">EnvGate</a>
+          <a href="https://ess2292.github.io/runtimegate/" aria-current="page">RuntimeGate</a>
+          <a href="https://ess2292.github.io/lockgate/">LockGate</a>
+          <a href="https://ess2292.github.io/servicegate/">ServiceGate</a>
+      </nav>
+<div class="footer-row">
+        <div>RuntimeGate 0.2.1 by Emilio Straubel · pre-launch pages, not indexed</div>
+        <div class="footer-links">
+          <a href="../index.html">Home</a>
+          <a href="index.html" aria-current="page">Guides</a>
+          <a href="../privacy.html">Privacy</a>
+          <a href="../terms.html">Terms</a>
+          <a href="https://github.com/ESS2292/runtimegate-action">Lite Action</a>
+          <a href="https://github.com/ESS2292/runtimegate-action/issues">Issues</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
